@@ -1,0 +1,61 @@
+locationId,name,area,type,latitude,longitude
+1,Commonwealth Hall,Main Campus Hill,Traditional Hall,5.6505,-0.1870
+2,Legon Hall,Main Campus Central,Traditional Hall,5.6498,-0.1862
+3,Volta Hall,Main Campus Central,Traditional Hall,5.6500,-0.1858
+4,Akuafo Hall,Main Campus Central,Traditional Hall,5.6495,-0.1855
+5,Mensah Sarbah Hall,South Campus,Traditional Hall,5.6480,-0.1875
+6,Jubilee Hall,South-East Campus,Traditional Hall,5.6475,-0.1865
+7,Alexander Adum Kwapong Hall,Diaspora Area,Diaspora Hostel,5.6530,-0.1900
+8,Jean Nelson Aka Hall,Diaspora Area,Diaspora Hostel,5.6535,-0.1905
+9,Hilla Limann Hall,Diaspora Area,Diaspora Hostel,5.6540,-0.1908
+10,Elizabeth Frances Sey Hall,Diaspora Area,Diaspora Hostel,5.6545,-0.1912
+11,African Union Hall (Pentagon),North-West Campus,Private Hostel,5.6555,-0.1920
+12,Evandy Hostel,North Campus TF Zone,Private Hostel,5.6560,-0.1915
+13,Bani Hostel,North Campus TF Zone,Private Hostel,5.6562,-0.1918
+14,James Topp Nelson Yankah Hall (TF),North Campus TF Zone,Private Hostel,5.6558,-0.1922
+15,International Students Hostel 1 (ISH 1),Central-East Campus,University Hostel,5.6510,-0.1845
+16,International Students Hostel 2 (ISH 2),Central-East Campus,University Hostel,5.6512,-0.1843
+17,Valco Trust Hostel,Graduate Campus Zone,Postgraduate Hostel,5.6520,-0.1835
+18,Nelson Mandela Hostel,Graduate Campus Zone,Postgraduate Hostel,5.6522,-0.1832
+19,Balme Library,Central Academic Spine,Academic / Library,5.6502,-0.1860
+20,Great Hall,Campus Hill Summit,Academic / Assembly,5.6508,-0.1868
+21,Jones Quartey Building (JQB),Central Academic Zone,Lecture Complex,5.6500,-0.1855
+22,Cedi Conference Centre,UGBS / East Campus,Academic / Events,5.6490,-0.1840
+23,N-Block Lecture Halls (N1-N3),Central Academic Zone,Lecture Complex,5.6501,-0.1857
+24,Kofi Annan ICT Centre,Science Quad,Lab / Computing,5.6515,-0.1850
+25,Department of Computer Science,Science Quad,Academic / Department,5.6517,-0.1852
+26,Department of Mathematics,Science Quad,Academic / Department,5.6519,-0.1848
+27,Department of Physics and Labs,Science Quad,Lab / Academic,5.6520,-0.1845
+28,Department of Chemistry and Labs,Science Quad,Lab / Academic,5.6518,-0.1842
+29,Department of Earth Science,Science Quad,Lab / Academic,5.6516,-0.1840
+30,Department of Statistics and Actuarial,Science Quad,Academic / Department,5.6514,-0.1838
+31,School of Engineering Sciences (SES),North-East Science Zone,Lab / Academic,5.6525,-0.1835
+32,Dept of Biochemistry Cell and Mol Bio,Science Quad,Lab / Academic,5.6513,-0.1847
+33,Noguchi Memorial Institute (NMIMR),Health Sciences Zone,Research Institute,5.6530,-0.1830
+34,School of Law,Central Academic Zone,Academic / Faculty,5.6492,-0.1852
+35,UGBS Main Building,UGBS East Campus,Academic / Faculty,5.6488,-0.1842
+36,School of Performing Arts,Central Academic Zone,Academic / Faculty,5.6496,-0.1865
+37,Institute of African Studies (IAS),Central Academic Zone,Research Institute,5.6494,-0.1870
+38,School of Languages,Central Academic Zone,Academic / Faculty,5.6497,-0.1863
+39,School of Social Sciences,Central Academic Zone,Academic / Faculty,5.6493,-0.1858
+40,UG Central Administration,Central Campus,Administrative,5.6500,-0.1862
+41,Office of Research Innovation and Development (ORID),Central Campus,Administrative,5.6498,-0.1860
+42,UG Medical Centre (Campus Clinic),Central Campus,Health Facility,5.6505,-0.1855
+43,UG Sports Complex (Stadium),South Campus,Sports / Recreation,5.6470,-0.1880
+44,Athletic Oval,South Campus,Sports / Recreation,5.6472,-0.1878
+45,Night Market Area,South Campus Commercial,Commercial / Market,5.6478,-0.1872
+46,Bush Canteen Area,Central Campus,Commercial / Market,5.6503,-0.1858
+47,Legon Main Gate,South Campus Entrance,Shuttle Terminal,5.6465,-0.1890
+48,Okponglo Intersection,South-East Boundary,Shuttle Terminal,5.6460,-0.1845
+49,Pentagon Shuttle Stop,North-West Campus,Shuttle Terminal,5.6553,-0.1918
+50,Diaspora Shuttle Stop,Diaspora Area,Shuttle Terminal,5.6532,-0.1902
+51,Science Shuttle Stop,Science Quad,Shuttle Terminal,5.6516,-0.1849
+52,Banking Square,Central Campus,Commercial / Services,5.6499,-0.1856
+53,University Bookshop,Central Campus,Commercial / Services,5.6497,-0.1854
+54,UG Fire Station,Central Campus,Emergency Services,5.6506,-0.1864
+55,Works and Physical Development Dept,Central Campus,Administrative,5.6504,-0.1866
+56,Legon Botanical Gardens,North-East Campus,Recreation / Green Space,5.6540,-0.1825
+57,ISSER Building,Central Academic Zone,Research Institute,5.6491,-0.1855
+58,School of Public Health,Health Sciences Zone,Academic / Faculty,5.6528,-0.1828
+59,University Guest Centre (Noguchi Lodge),North Campus,Hospitality,5.6535,-0.1835
+60,UG Water Treatment Plant,North Campus,Utility / Infrastructure,5.6550,-0.1840

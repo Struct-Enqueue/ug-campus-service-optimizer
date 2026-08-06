@@ -1,0 +1,36 @@
+resourceId,type,homeLocationId,capacity,availabilityStatus
+1,Electrician,55,3,available
+2,Electrician,55,3,available
+3,Electrician,1,2,available
+4,Electrician,42,3,available
+5,Electrician,24,2,available
+6,Plumber,55,2,available
+7,Plumber,55,3,available
+8,Plumber,42,2,available
+9,Plumber,5,2,available
+10,Plumber,14,2,available
+11,IT Technician,24,3,available
+12,IT Technician,25,3,available
+13,IT Technician,24,2,available
+14,IT Technician,35,2,available
+15,IT Technician,19,2,available
+16,Cleaner,1,4,available
+17,Cleaner,2,4,available
+18,Cleaner,3,4,available
+19,Cleaner,5,4,available
+20,Cleaner,7,4,available
+21,Cleaner,21,4,available
+22,Cleaner,19,4,available
+23,Structural Maintenance,55,2,available
+24,Structural Maintenance,55,2,available
+25,Structural Maintenance,40,2,available
+26,HVAC Technician,55,2,available
+27,HVAC Technician,42,2,available
+28,Shuttle,47,15,available
+29,Shuttle,47,15,available
+30,Shuttle,49,12,available
+31,Shuttle,50,12,available
+32,Groundskeeper,43,3,available
+33,Groundskeeper,56,3,available
+34,Security Patrol,54,2,available
+35,Security Patrol,47,2,available
