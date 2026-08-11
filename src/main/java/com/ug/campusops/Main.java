@@ -28,16 +28,63 @@ public class Main {
         System.out.println("==============================================");
         System.out.println();
 
-        // TODO: All teams — wire up the startup sequence here once features are ready
-        //
-        // Step 1: Connect to database
-        // DatabaseConnector db = new DatabaseConnector();
-        //
-        // Step 2: Set up schema and load data
-        // SchemaSetup schema = new SchemaSetup(db);
-        // schema.createTables();
-        // // schema.seedFromCSV("data"); // uncomment on first run
-        //
+        // ── Feature 1: Database connection & data loading ─────────────
+        DatabaseConnector db = new DatabaseConnector();
+
+        try {
+            // Set up schema (creates tables if they don't exist)
+            SchemaSetup schema = new SchemaSetup(db);
+
+            // Check if data is already loaded
+            java.sql.ResultSet rs = db.executeQuery("SELECT COUNT(*) FROM locations");
+            rs.next();
+            int existingCount = rs.getInt(1);
+            rs.close();
+
+            if (existingCount == 0) {
+                // First run — load CSV data
+                System.out.println("[INFO] Database is empty. Loading CSV data...");
+                schema.seedFromCSV("data");
+            } else {
+                System.out.println("[INFO] Database already has " + existingCount + " locations. Skipping CSV load.");
+            }
+
+            // ── Verification: print row counts ────────────────────────
+            System.out.println();
+            System.out.println("==============================================");
+            System.out.println("  VERIFICATION — Table Row Counts");
+            System.out.println("==============================================");
+
+            String[] tables = {"locations", "routes", "resources", "service_requests"};
+            int[] expected  = {60, 110, 35, 310};
+
+            for (int i = 0; i < tables.length; i++) {
+                rs = db.executeQuery("SELECT COUNT(*) FROM " + tables[i]);
+                rs.next();
+                int count = rs.getInt(1);
+                rs.close();
+                String status = (count == expected[i]) ? "✓ PASS" : "✗ FAIL (expected " + expected[i] + ")";
+                System.out.printf("  %-20s : %4d  %s%n", tables[i], count, status);
+            }
+
+            // Quick sanity check
+            rs = db.executeQuery("SELECT name FROM locations WHERE location_id = 1");
+            if (rs.next()) {
+                System.out.println();
+                System.out.println("  Sanity check: location_id=1 → " + rs.getString("name"));
+            }
+            rs.close();
+
+            System.out.println("==============================================");
+
+        } catch (java.sql.SQLException e) {
+            System.err.println("[ERROR] Database error: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            db.closeConnection();
+        }
+
+        // TODO: Steps 3-5 — other feature teams wire up graph, priority queue, and console menu
         // Step 3: Build graph from database
         // Graph campusGraph = new Graph(60);
         // // load locations and routes from DB, add to graph
@@ -48,9 +95,5 @@ public class Main {
         // Step 5: Launch console menu
         // ConsoleMenu menu = new ConsoleMenu();
         // menu.start();
-
-        System.out.println("[INFO] Main class is ready. Features are not yet wired up.");
-        System.out.println("[INFO] Each feature team should implement their stubs first,");
-        System.out.println("[INFO] then Feature 9 team connects everything here.");
     }
 }
