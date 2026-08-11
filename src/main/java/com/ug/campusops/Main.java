@@ -56,8 +56,7 @@ public class Main {
             System.out.println("==============================================");
 
             String[] tables = {"locations", "routes", "resources", "service_requests"};
-            int[] expected  = {60, 110, 35, 310};
-
+             int[] expected  = {60, 120, 35, 310};
             for (int i = 0; i < tables.length; i++) {
                 rs = db.executeQuery("SELECT COUNT(*) FROM " + tables[i]);
                 rs.next();
