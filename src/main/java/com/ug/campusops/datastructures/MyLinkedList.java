@@ -47,8 +47,19 @@ public class MyLinkedList<T> implements Iterable<T> {
      * @param element the element to add
      */
     public void addFirst(T element) {
-        // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyLinkedList.addFirst() not yet implemented");
+        Node<T> newNode = new Node<>(element);
+
+        if (head == null) {
+            // List is empty
+            head = newNode;
+            tail = newNode;
+        } else {
+            newNode.next = head;
+            head.prev = newNode;
+            head = newNode;
+        }
+
+        size++;
     }
 
     /**
@@ -57,8 +68,19 @@ public class MyLinkedList<T> implements Iterable<T> {
      * @param element the element to add
      */
     public void addLast(T element) {
-        // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyLinkedList.addLast() not yet implemented");
+        Node<T> newNode = new Node<>(element);
+
+        if (tail == null) {
+            // List is empty
+            head = newNode;
+            tail = newNode;
+        } else {
+            newNode.prev = tail;
+            tail.next = newNode;
+            tail = newNode;
+        }
+
+        size++;
     }
 
     /**
@@ -69,8 +91,25 @@ public class MyLinkedList<T> implements Iterable<T> {
      * @throws IllegalArgumentException if node is null
      */
     public void insertAfter(Node<T> node, T element) {
-        // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyLinkedList.insertAfter() not yet implemented");
+        if (node == null) {
+            throw new IllegalArgumentException("Node cannot be null");
+        }
+
+        Node<T> newNode = new Node<>(element);
+
+        newNode.prev = node;
+        newNode.next = node.next;
+
+        if (node.next != null) {
+            node.next.prev = newNode;
+        } else {
+            // Inserting after the tail
+            tail = newNode;
+        }
+
+        node.next = newNode;
+
+        size++;
     }
 
     /**
@@ -80,8 +119,34 @@ public class MyLinkedList<T> implements Iterable<T> {
      * @return true if the element was found and removed, false otherwise
      */
     public boolean remove(T element) {
-        // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyLinkedList.remove() not yet implemented");
+        Node<T> current = head;
+
+        while (current != null) {
+
+            if (element == null ? current.data == null : element.equals(current.data)) {
+
+                // Removing the head
+                if (current.prev == null) {
+                    head = current.next;
+                } else {
+                    current.prev.next = current.next;
+                }
+
+                // Removing the tail
+                if (current.next == null) {
+                    tail = current.prev;
+                } else {
+                    current.next.prev = current.prev;
+                }
+
+                size--;
+                return true;
+            }
+
+            current = current.next;
+        }
+
+        return false;
     }
 
     /**
@@ -91,8 +156,11 @@ public class MyLinkedList<T> implements Iterable<T> {
      * @throws NoSuchElementException if the list is empty
      */
     public T getFirst() {
-        // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyLinkedList.getFirst() not yet implemented");
+        if (head == null) {
+            throw new NoSuchElementException("List is empty");
+        }
+
+        return head.data;
     }
 
     /**
@@ -102,21 +170,32 @@ public class MyLinkedList<T> implements Iterable<T> {
      * @throws NoSuchElementException if the list is empty
      */
     public T getLast() {
-        // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyLinkedList.getLast() not yet implemented");
+        if (tail == null) {
+            throw new NoSuchElementException("List is empty");
+        }
+
+        return tail.data;
     }
 
     /** Returns the number of elements in the list. */
-    public int size() { return size; }
+    public int size() {
+        return size;
+    }
 
     /** Returns true if the list is empty. */
-    public boolean isEmpty() { return size == 0; }
+    public boolean isEmpty() {
+        return size == 0;
+    }
 
     /** Returns the head node (for diagram/traversal demos). */
-    public Node<T> getHead() { return head; }
+    public Node<T> getHead() {
+        return head;
+    }
 
     /** Returns the tail node (for diagram/traversal demos). */
-    public Node<T> getTail() { return tail; }
+    public Node<T> getTail() {
+        return tail;
+    }
 
     /**
      * Returns an iterator over the elements in this list (front to back).
@@ -124,7 +203,26 @@ public class MyLinkedList<T> implements Iterable<T> {
      */
     @Override
     public Iterator<T> iterator() {
-        // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyLinkedList.iterator() not yet implemented");
+        return new Iterator<T>() {
+
+            private Node<T> current = head;
+
+            @Override
+            public boolean hasNext() {
+                return current != null;
+            }
+
+            @Override
+            public T next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+
+                T data = current.data;
+                current = current.next;
+
+                return data;
+            }
+        };
     }
 }
