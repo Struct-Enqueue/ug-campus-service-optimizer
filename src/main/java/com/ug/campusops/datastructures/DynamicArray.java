@@ -43,7 +43,23 @@ public class DynamicArray<T> {
      */
     public void insert(int index, T element) {
         // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("DynamicArray.insert() not yet implemented");
+
+         if (index < 0 || index > size) {
+         throw new IndexOutOfBoundsException(
+             "Index: " + index + ", Size: " + size
+         );
+      }
+
+        if (size == data.length) {
+          resize();
+        }
+
+        for (int i = size; i > index; i--) {
+         data[i] = data[i - 1];
+      }
+
+        data[index] = element;
+        size++;
     }
 
     /**
@@ -53,7 +69,7 @@ public class DynamicArray<T> {
      */
     public void add(T element) {
         // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("DynamicArray.add() not yet implemented");
+        insert(size, element);
     }
 
     /**
@@ -65,7 +81,13 @@ public class DynamicArray<T> {
      */
     public T get(int index) {
         // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("DynamicArray.get() not yet implemented");
+        if (index < 0 || index >= size) {
+            throw new IndexOutOfBoundsException(
+                "Index: " + index + ", Size: " + size
+            );
+        }
+        
+        return (T) data[index];
     }
 
     /**
@@ -77,8 +99,15 @@ public class DynamicArray<T> {
      */
     public void set(int index, T element) {
         // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("DynamicArray.set() not yet implemented");
+        if (index < 0 || index >= size ) {
+            throw new IndexOutOfBoundsException(
+                "Index: " + index + ", Size: " + size
+            );  
+        }
+         data[index] = element;
     }
+      
+
 
     /**
      * Removes and returns the element at the specified index, shifting subsequent elements left.
@@ -89,7 +118,22 @@ public class DynamicArray<T> {
      */
     public T remove(int index) {
         // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("DynamicArray.remove() not yet implemented");
+       if (index < 0 || index >= size){
+        throw new IndexOutOfBoundsException(
+            "Index: " + index + ", Size: " + size
+        );
+       }
+
+       T removedElement = (T) data[index];
+
+       for (int i = index; i < size - 1; i++) {
+            data[i] = data[i + 1];
+         }
+
+       data[size - 1] = null;
+        size--;
+
+            return removedElement;
     }
 
     /**
@@ -112,7 +156,23 @@ public class DynamicArray<T> {
      */
     private void resize() {
         // TODO: Feature 2 team — implement this (double the capacity)
-        throw new UnsupportedOperationException("DynamicArray.resize() not yet implemented");
+        int oldCapacity = data.length;
+int newCapacity = oldCapacity == 0 ? 1 : oldCapacity * 2;
+
+Object[] newData = new Object[newCapacity];
+
+for (int i = 0; i < size; i++) {
+    newData[i] = data[i];
+}
+
+data = newData;
+
+System.out.println(
+    "DynamicArray resized: "
+    + oldCapacity
+    + " -> "
+    + newCapacity
+);
     }
 
     /**
