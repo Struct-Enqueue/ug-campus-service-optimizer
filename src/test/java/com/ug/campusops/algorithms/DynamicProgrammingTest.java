@@ -1,86 +1,97 @@
 package com.ug.campusops.algorithms;
 
-import com.ug.campusops.model.ServiceRequest;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.junit.jupiter.api.AfterAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import com.ug.campusops.db.DatabaseConnector;
+import com.ug.campusops.model.ServiceRequest;
 
 /**
- * Tests for DynamicProgramming. No dependency on Graph/Dijkstra/DB —
- * ServiceRequest is a plain finished model class, so these run standalone.
+ * Tests for DynamicProgramming, run entirely against the REAL PostgreSQL
+ * database (campusops). No hardcoded ServiceRequest arrays — every cost and
+ * value used comes from real rows in service_requests.
+ *
+ *   mvn test -Dtest=DynamicProgrammingTest
+ *
+ * PREREQUISITES:
+ *   - Postgres running locally, .env configured (same setup ResetDB uses)
+ *   - Database already seeded, e.g. via: java -cp ... com.ug.campusops.ResetDB
+ *
+ * If the DB isn't reachable, every test in this class is SKIPPED (not
+ * failed) via Assumptions.
+ *
+ * NOTE: unlike Greedy, requestKnapsack()/optimalRouteBudget() have no
+ * dependency on Graph, so these tests need no workaround — they query
+ * service_requests directly.
  */
 class DynamicProgrammingTest {
 
-    @Test
-    void testOptimalRouteBudgetMatchesBruteForce() {
-        int[] cost = {30, 60, 20, 90, 120};
-        int[] value = {5, 4, 2, 3, 5};
-        int budget = 100;
+    private static DatabaseConnector db;
+    private static boolean dbAvailable = false;
 
-        DynamicProgramming.KnapsackResult result =
-                DynamicProgramming.optimalRouteBudget(cost, value, budget);
+    @BeforeAll
+    static void connect() {
+        db = new DatabaseConnector();
+        try {
+            db.getConnection();
+            dbAvailable = true;
+        } catch (SQLException e) {
+            System.out.println("[DynamicProgrammingTest] DB not reachable, skipping: " + e.getMessage());
+            dbAvailable = false;
+        }
+    }
 
-        int expected = bruteForceKnapsack(cost, value, budget);
-        assertEquals(expected, result.maxValue);
+    @AfterAll
+    static void disconnect() {
+        if (db != null) db.closeConnection();
+    }
 
-        // selected items must actually respect the budget
-        int totalCost = 0, totalValue = 0;
-        for (int i = 0; i < cost.length; i++) {
-            if (result.selectedItems[i]) {
-                totalCost += cost[i];
-                totalValue += value[i];
+    @BeforeEach
+    void requireDb() {
+        Assumptions.assumeTrue(dbAvailable, "Skipping: database not reachable");
+    }
+
+    private List<ServiceRequest> loadPendingRequests(int limit) throws SQLException {
+        String sql = "SELECT request_id, source_location_id, destination_location_id, "
+                + "category, urgency_level, time_submitted, deadline, status, assigned_resource_id "
+                + "FROM service_requests WHERE status = 'pending' ORDER BY request_id LIMIT ?";
+        List<ServiceRequest> out = new ArrayList<>();
+        try (PreparedStatement ps = db.getConnection().prepareStatement(sql)) {
+            ps.setInt(1, limit);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    int destId = rs.getObject("destination_location_id") == null
+                            ? 0 : rs.getInt("destination_location_id");
+                    int assignedId = rs.getObject("assigned_resource_id") == null
+                            ? 0 : rs.getInt("assigned_resource_id");
+                    out.add(new ServiceRequest(
+                            rs.getInt("request_id"),
+                            rs.getInt("source_location_id"),
+                            destId,
+                            rs.getString("category"),
+                            rs.getInt("urgency_level"),
+                            rs.getTimestamp("time_submitted").toString(),
+                            rs.getTimestamp("deadline") == null ? null : rs.getTimestamp("deadline").toString(),
+                            rs.getString("status"),
+                            assignedId
+                    ));
+                }
             }
         }
-        assertTrue(totalCost <= budget, "selection must not exceed budget");
-        assertEquals(result.maxValue, totalValue, "reported maxValue must match reconstructed selection");
-    }
-
-    @Test
-    void testZeroBudgetSelectsNothing() {
-        int[] cost = {10, 20};
-        int[] value = {5, 5};
-        DynamicProgramming.KnapsackResult result = DynamicProgramming.optimalRouteBudget(cost, value, 0);
-        assertEquals(0, result.maxValue);
-        for (boolean selected : result.selectedItems) {
-            assertFalse(selected);
-        }
-    }
-
-    @Test
-    void testSingleItemFitsExactly() {
-        int[] cost = {50};
-        int[] value = {9};
-        DynamicProgramming.KnapsackResult result = DynamicProgramming.optimalRouteBudget(cost, value, 50);
-        assertEquals(9, result.maxValue);
-        assertTrue(result.selectedItems[0]);
-    }
-
-    @Test
-    void testRequestKnapsackWithServiceRequests() {
-        ServiceRequest[] reqs = new ServiceRequest[3];
-        reqs[0] = new ServiceRequest(1, 1, 1, "IT", 5, "t", "d", "pending", 0);        // cost 30, value 5
-        reqs[1] = new ServiceRequest(2, 1, 1, "cleaning", 2, "t", "d", "pending", 0);   // cost 20, value 2
-        reqs[2] = new ServiceRequest(3, 1, 1, "structural", 5, "t", "d", "pending", 0); // cost 120, value 5
-
-        DynamicProgramming.KnapsackResult result = DynamicProgramming.requestKnapsack(reqs, 50);
-
-        // Budget 50: request 0 (30) + request 1 (20) = 50 cost, 7 value. Request 2 (120) can't fit.
-        assertEquals(7, result.maxValue);
-        assertTrue(result.selectedItems[0]);
-        assertTrue(result.selectedItems[1]);
-        assertFalse(result.selectedItems[2]);
-    }
-
-    @Test
-    void testNegativeBudgetThrows() {
-        assertThrows(IllegalArgumentException.class,
-                () -> DynamicProgramming.optimalRouteBudget(new int[]{1}, new int[]{1}, -5));
-    }
-
-    @Test
-    void testMismatchedArrayLengthsThrows() {
-        assertThrows(IllegalArgumentException.class,
-                () -> DynamicProgramming.optimalRouteBudget(new int[]{1, 2}, new int[]{1}, 10));
+        return out;
     }
 
     /** Simple 2^n brute force used only to validate the DP result in tests. */
@@ -98,5 +109,135 @@ class DynamicProgrammingTest {
             if (c <= budget && v > best) best = v;
         }
         return best;
+    }
+
+    /**
+     * Replaces testOptimalRouteBudgetMatchesBruteForce and
+     * testRequestKnapsackWithServiceRequests together: cost/value pairs are
+     * derived from real pending requests (via the same estimateCost()/
+     * getUrgencyLevel() the algorithm itself uses), then requestKnapsack's
+     * result is cross-checked against a brute-force search over those exact
+     * real values. Limited to 15 real requests to keep 2^n brute force fast.
+     */
+    @Test
+    void testRequestKnapsackMatchesBruteForceOnRealData() throws SQLException {
+        List<ServiceRequest> requests = loadPendingRequests(15);
+        Assumptions.assumeTrue(!requests.isEmpty(), "No pending requests in DB to test with");
+
+        ServiceRequest[] reqArr = requests.toArray(new ServiceRequest[0]);
+        int budgetMinutes = 240;
+
+        int[] cost = new int[reqArr.length];
+        int[] value = new int[reqArr.length];
+        for (int i = 0; i < reqArr.length; i++) {
+            cost[i] = DynamicProgramming.estimateCost(reqArr[i]);
+            value[i] = reqArr[i].getUrgencyLevel();
+        }
+
+        DynamicProgramming.KnapsackResult result = DynamicProgramming.requestKnapsack(reqArr, budgetMinutes);
+        int expected = bruteForceKnapsack(cost, value, budgetMinutes);
+
+        assertEquals(expected, result.maxValue,
+                "requestKnapsack result must match brute force over the same real cost/value data");
+
+        int totalCost = 0, totalValue = 0;
+        for (int i = 0; i < reqArr.length; i++) {
+            if (result.selectedItems[i]) {
+                totalCost += cost[i];
+                totalValue += value[i];
+            }
+        }
+        assertTrue(totalCost <= budgetMinutes, "selection must not exceed budget");
+        assertEquals(result.maxValue, totalValue, "reported maxValue must match reconstructed selection");
+    }
+
+    /** Replaces testZeroBudgetSelectsNothing, using real pending requests. */
+    @Test
+    void testZeroBudgetSelectsNothing() throws SQLException {
+        List<ServiceRequest> requests = loadPendingRequests(20);
+        Assumptions.assumeTrue(!requests.isEmpty(), "No pending requests in DB to test with");
+
+        ServiceRequest[] reqArr = requests.toArray(new ServiceRequest[0]);
+        DynamicProgramming.KnapsackResult result = DynamicProgramming.requestKnapsack(reqArr, 0);
+
+        assertEquals(0, result.maxValue);
+        for (boolean selected : result.selectedItems) {
+            assertFalse(selected);
+        }
+    }
+
+    /**
+     * Replaces testSingleItemFitsExactly. Uses exactly one real pending
+     * request, with the budget set to that request's own estimated cost —
+     * so it fits with zero slack, using real numbers instead of a fake
+     * cost/value pair.
+     */
+    @Test
+    void testSingleRealRequestFitsExactly() throws SQLException {
+        List<ServiceRequest> requests = loadPendingRequests(1);
+        Assumptions.assumeTrue(!requests.isEmpty(), "No pending requests in DB to test with");
+
+        ServiceRequest[] reqArr = { requests.get(0) };
+        int exactCost = DynamicProgramming.estimateCost(reqArr[0]);
+
+        DynamicProgramming.KnapsackResult result = DynamicProgramming.requestKnapsack(reqArr, exactCost);
+
+        assertEquals(reqArr[0].getUrgencyLevel(), result.maxValue);
+        assertTrue(result.selectedItems[0]);
+    }
+
+    /**
+     * Replaces the budget-respecting assertions of the original tests at
+     * larger, more realistic data volume: 100 real requests against a tight
+     * 4-hour shift.
+     */
+    @Test
+    void testRequestKnapsackRespectsBudgetAtScale() throws SQLException {
+        List<ServiceRequest> requests = loadPendingRequests(100);
+        Assumptions.assumeTrue(!requests.isEmpty(), "No pending requests in DB to test with");
+
+        ServiceRequest[] reqArr = requests.toArray(new ServiceRequest[0]);
+        int budgetMinutes = 240;
+
+        DynamicProgramming.KnapsackResult result = DynamicProgramming.requestKnapsack(reqArr, budgetMinutes);
+
+        int totalCost = 0, totalValue = 0;
+        for (int i = 0; i < reqArr.length; i++) {
+            if (result.selectedItems[i]) {
+                totalCost += DynamicProgramming.estimateCost(reqArr[i]);
+                totalValue += reqArr[i].getUrgencyLevel();
+            }
+        }
+
+        assertTrue(totalCost <= budgetMinutes,
+                "selected real requests must not exceed the " + budgetMinutes + "-minute budget");
+        assertEquals(result.maxValue, totalValue,
+                "reported maxValue must match the actual urgency sum of selected real requests");
+
+        System.out.println("[DynamicProgrammingTest] Used " + totalCost + "/" + budgetMinutes
+                + " minutes, value=" + totalValue + " across " + reqArr.length + " real requests.");
+    }
+
+    /**
+     * Replaces testNegativeBudgetThrows. This is pure input validation on
+     * optimalRouteBudget's contract (negative budget is always illegal,
+     * regardless of what the arrays contain), so it uses minimal literal
+     * arrays rather than DB rows — there's no real-world data that would
+     * make this case meaningfully different.
+     */
+    @Test
+    void testNegativeBudgetThrows() {
+        assertThrows(IllegalArgumentException.class,
+                () -> DynamicProgramming.optimalRouteBudget(new int[]{1}, new int[]{1}, -5));
+    }
+
+    /**
+     * Replaces testMismatchedArrayLengthsThrows. Same reasoning as above —
+     * pure input-validation contract test, independent of any domain data.
+     */
+    @Test
+    void testMismatchedArrayLengthsThrows() {
+        assertThrows(IllegalArgumentException.class,
+                () -> DynamicProgramming.optimalRouteBudget(new int[]{1, 2}, new int[]{1}, 10));
     }
 }
