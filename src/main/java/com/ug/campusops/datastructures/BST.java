@@ -48,8 +48,23 @@ public class BST<K extends Comparable<K>, V> {
      * @param value the value associated with the key
      */
     public void insert(K key, V value) {
-        // TODO: Feature 3 team — implement this
-        throw new UnsupportedOperationException("BST.insert() not yet implemented");
+        root = insertRec(root, key, value);
+    }
+
+    private BSTNode<K, V> insertRec(BSTNode<K, V> node, K key, V value) {
+        if (node == null) {
+            size++;
+            return new BSTNode<>(key, value);
+        }
+        int cmp = key.compareTo(node.key);
+        if (cmp < 0) {
+            node.left = insertRec(node.left, key, value);
+        } else if (cmp > 0) {
+            node.right = insertRec(node.right, key, value);
+        } else {
+            node.value = value;
+        }
+        return node;
     }
 
     /**
@@ -59,8 +74,14 @@ public class BST<K extends Comparable<K>, V> {
      * @return the associated value, or null if not found
      */
     public V search(K key) {
-        // TODO: Feature 3 team — implement this
-        throw new UnsupportedOperationException("BST.search() not yet implemented");
+        BSTNode<K, V> current = root;
+        while (current != null) {
+            int cmp = key.compareTo(current.key);
+            if (cmp == 0) return current.value;
+            else if (cmp < 0) current = current.left;
+            else current = current.right;
+        }
+        return null;
     }
 
     /**
@@ -70,8 +91,37 @@ public class BST<K extends Comparable<K>, V> {
      * @return true if the key was found and deleted, false otherwise
      */
     public boolean delete(K key) {
-        // TODO: Feature 3 team — implement this (handle 0, 1, and 2 children cases)
-        throw new UnsupportedOperationException("BST.delete() not yet implemented");
+        int initialSize = size;
+        root = deleteRec(root, key);
+        return size < initialSize;
+    }
+
+    private BSTNode<K, V> deleteRec(BSTNode<K, V> node, K key) {
+        if (node == null) return null;
+        int cmp = key.compareTo(node.key);
+        if (cmp < 0) {
+            node.left = deleteRec(node.left, key);
+        } else if (cmp > 0) {
+            node.right = deleteRec(node.right, key);
+        } else {
+            size--;
+            if (node.left == null) return node.right;
+            if (node.right == null) return node.left;
+            
+            BSTNode<K, V> minNode = findMin(node.right);
+            node.key = minNode.key;
+            node.value = minNode.value;
+            size++; // Compensate for the recursive delete
+            node.right = deleteRec(node.right, minNode.key);
+        }
+        return node;
+    }
+
+    private BSTNode<K, V> findMin(BSTNode<K, V> node) {
+        while (node.left != null) {
+            node = node.left;
+        }
+        return node;
     }
 
     /**
@@ -80,24 +130,48 @@ public class BST<K extends Comparable<K>, V> {
      * Required for the "sorted inorder output" evidence.
      */
     public void inorderTraversal() {
-        // TODO: Feature 3 team — implement this (print or collect to a list)
-        throw new UnsupportedOperationException("BST.inorderTraversal() not yet implemented");
+        inorderRec(root);
+        System.out.println();
+    }
+
+    private void inorderRec(BSTNode<K, V> node) {
+        if (node != null) {
+            inorderRec(node.left);
+            System.out.print(node.key + " ");
+            inorderRec(node.right);
+        }
     }
 
     /**
      * Root → Left subtree → Right subtree
      */
     public void preorderTraversal() {
-        // TODO: Feature 3 team — implement this
-        throw new UnsupportedOperationException("BST.preorderTraversal() not yet implemented");
+        preorderRec(root);
+        System.out.println();
+    }
+
+    private void preorderRec(BSTNode<K, V> node) {
+        if (node != null) {
+            System.out.print(node.key + " ");
+            preorderRec(node.left);
+            preorderRec(node.right);
+        }
     }
 
     /**
      * Left subtree → Right subtree → Root
      */
     public void postorderTraversal() {
-        // TODO: Feature 3 team — implement this
-        throw new UnsupportedOperationException("BST.postorderTraversal() not yet implemented");
+        postorderRec(root);
+        System.out.println();
+    }
+
+    private void postorderRec(BSTNode<K, V> node) {
+        if (node != null) {
+            postorderRec(node.left);
+            postorderRec(node.right);
+            System.out.print(node.key + " ");
+        }
     }
 
     /** Returns the number of nodes in the tree. */
@@ -108,8 +182,11 @@ public class BST<K extends Comparable<K>, V> {
 
     /** Returns the height of the tree (for performance comparison with balanced trees). */
     public int height() {
-        // TODO: Feature 3 team — implement this
-        throw new UnsupportedOperationException("BST.height() not yet implemented");
+        return heightRec(root);
+    }
+
+    private int heightRec(BSTNode<K, V> node) {
+        return node == null ? 0 : 1 + Math.max(heightRec(node.left), heightRec(node.right));
     }
 
     /** Returns the root node (for testing/diagramming). */

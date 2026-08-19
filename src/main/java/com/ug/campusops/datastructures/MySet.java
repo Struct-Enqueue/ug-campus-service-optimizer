@@ -34,8 +34,11 @@ public class MySet<T> {
      * @return true if the element was added (was not already present)
      */
     public boolean add(T element) {
-        // TODO: Feature 3 team — implement this
-        throw new UnsupportedOperationException("MySet.add() not yet implemented");
+        if (table.containsKey(element)) {
+            return false;
+        }
+        table.put(element, Boolean.TRUE);
+        return true;
     }
 
     /**
@@ -45,8 +48,7 @@ public class MySet<T> {
      * @return true if the element was found and removed
      */
     public boolean remove(T element) {
-        // TODO: Feature 3 team — implement this
-        throw new UnsupportedOperationException("MySet.remove() not yet implemented");
+        return table.remove(element) != null;
     }
 
     /**
@@ -55,8 +57,7 @@ public class MySet<T> {
      * @param element the element to check
      */
     public boolean contains(T element) {
-        // TODO: Feature 3 team — implement this
-        throw new UnsupportedOperationException("MySet.contains() not yet implemented");
+        return table.containsKey(element);
     }
 
     /** Returns the number of elements in the set. */
@@ -76,8 +77,15 @@ public class MySet<T> {
      * @return the intersection set
      */
     public MySet<T> intersection(MySet<T> otherSet) {
-        // TODO: Feature 3 team — implement this
-        throw new UnsupportedOperationException("MySet.intersection() not yet implemented");
+        MySet<T> result = new MySet<>(Math.max(this.table.getTableSize(), otherSet.table.getTableSize()));
+        DynamicArray<T> keys = this.table.keys();
+        for (int i = 0; i < keys.size(); i++) {
+            T key = keys.get(i);
+            if (otherSet.contains(key)) {
+                result.add(key);
+            }
+        }
+        return result;
     }
 
     /**
@@ -87,7 +95,15 @@ public class MySet<T> {
      * @return the union set
      */
     public MySet<T> union(MySet<T> otherSet) {
-        // TODO: Feature 3 team — implement this
-        throw new UnsupportedOperationException("MySet.union() not yet implemented");
+        MySet<T> result = new MySet<>(this.table.getTableSize() + otherSet.table.getTableSize());
+        DynamicArray<T> keys1 = this.table.keys();
+        for (int i = 0; i < keys1.size(); i++) {
+            result.add(keys1.get(i));
+        }
+        DynamicArray<T> keys2 = otherSet.table.keys();
+        for (int i = 0; i < keys2.size(); i++) {
+            result.add(keys2.get(i));
+        }
+        return result;
     }
 }

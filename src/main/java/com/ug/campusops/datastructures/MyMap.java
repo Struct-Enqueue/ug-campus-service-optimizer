@@ -36,8 +36,7 @@ public class MyMap<K, V> {
      * @param value the value to associate
      */
     public void put(K key, V value) {
-        // TODO: Feature 3 team — implement this
-        throw new UnsupportedOperationException("MyMap.put() not yet implemented");
+        table.put(key, value);
     }
 
     /**
@@ -47,8 +46,7 @@ public class MyMap<K, V> {
      * @return the associated value, or null if not found
      */
     public V get(K key) {
-        // TODO: Feature 3 team — implement this
-        throw new UnsupportedOperationException("MyMap.get() not yet implemented");
+        return table.get(key);
     }
 
     /**
@@ -58,8 +56,7 @@ public class MyMap<K, V> {
      * @return the removed value, or null if not found
      */
     public V remove(K key) {
-        // TODO: Feature 3 team — implement this
-        throw new UnsupportedOperationException("MyMap.remove() not yet implemented");
+        return table.remove(key);
     }
 
     /**
@@ -68,8 +65,7 @@ public class MyMap<K, V> {
      * @param key the key to check
      */
     public boolean containsKey(K key) {
-        // TODO: Feature 3 team — implement this
-        throw new UnsupportedOperationException("MyMap.containsKey() not yet implemented");
+        return table.containsKey(key);
     }
 
     /**
@@ -77,16 +73,14 @@ public class MyMap<K, V> {
      * (Returns DynamicArray since we can't use java.util.List)
      */
     public DynamicArray<K> keys() {
-        // TODO: Feature 3 team — implement this
-        throw new UnsupportedOperationException("MyMap.keys() not yet implemented");
+        return table.keys();
     }
 
     /**
      * Returns a DynamicArray of all values in the map.
      */
     public DynamicArray<V> values() {
-        // TODO: Feature 3 team — implement this
-        throw new UnsupportedOperationException("MyMap.values() not yet implemented");
+        return table.values();
     }
 
     /** Returns the number of key-value pairs. */
