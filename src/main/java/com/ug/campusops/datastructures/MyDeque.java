@@ -16,33 +16,70 @@ import java.util.NoSuchElementException;
  */
 public class MyDeque<T> {
 
-    // TODO: Feature 2 team — choose internal storage (circular array or doubly-linked list)
+    /**
+     * Internal node class.
+     */
+    private static class Node<T> {
+        T data;
+        Node<T> next;
+        Node<T> prev;
+
+        Node(T data) {
+            this.data = data;
+            this.next = null;
+            this.prev = null;
+        }
+    }
+
+    private Node<T> front;
+    private Node<T> rear;
+    private int size;
 
     /** Creates an empty deque. */
     public MyDeque() {
-        // TODO: Feature 2 team — implement this
+        front = null;
+        rear = null;
+        size = 0;
     }
 
     /**
      * Inserts an element at the front of the deque.
-     * Use for urgent/priority insertion.
      *
      * @param element the element to add
      */
     public void addFront(T element) {
-        // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyDeque.addFront() not yet implemented");
+        Node<T> newNode = new Node<>(element);
+
+        if (isEmpty()) {
+            front = newNode;
+            rear = newNode;
+        } else {
+            newNode.next = front;
+            front.prev = newNode;
+            front = newNode;
+        }
+
+        size++;
     }
 
     /**
      * Inserts an element at the rear of the deque.
-     * Use for normal FIFO insertion.
      *
      * @param element the element to add
      */
     public void addRear(T element) {
-        // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyDeque.addRear() not yet implemented");
+        Node<T> newNode = new Node<>(element);
+
+        if (isEmpty()) {
+            front = newNode;
+            rear = newNode;
+        } else {
+            newNode.prev = rear;
+            rear.next = newNode;
+            rear = newNode;
+        }
+
+        size++;
     }
 
     /**
@@ -52,8 +89,23 @@ public class MyDeque<T> {
      * @throws NoSuchElementException if the deque is empty
      */
     public T removeFront() {
-        // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyDeque.removeFront() not yet implemented");
+        if (isEmpty()) {
+            throw new NoSuchElementException("Deque is empty");
+        }
+
+        T element = front.data;
+
+        if (size == 1) {
+            front = null;
+            rear = null;
+        } else {
+            front = front.next;
+            front.prev = null;
+        }
+
+        size--;
+
+        return element;
     }
 
     /**
@@ -63,8 +115,23 @@ public class MyDeque<T> {
      * @throws NoSuchElementException if the deque is empty
      */
     public T removeRear() {
-        // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyDeque.removeRear() not yet implemented");
+        if (isEmpty()) {
+            throw new NoSuchElementException("Deque is empty");
+        }
+
+        T element = rear.data;
+
+        if (size == 1) {
+            front = null;
+            rear = null;
+        } else {
+            rear = rear.prev;
+            rear.next = null;
+        }
+
+        size--;
+
+        return element;
     }
 
     /**
@@ -74,8 +141,11 @@ public class MyDeque<T> {
      * @throws NoSuchElementException if the deque is empty
      */
     public T peekFront() {
-        // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyDeque.peekFront() not yet implemented");
+        if (isEmpty()) {
+            throw new NoSuchElementException("Deque is empty");
+        }
+
+        return front.data;
     }
 
     /**
@@ -85,19 +155,20 @@ public class MyDeque<T> {
      * @throws NoSuchElementException if the deque is empty
      */
     public T peekRear() {
-        // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyDeque.peekRear() not yet implemented");
+        if (isEmpty()) {
+            throw new NoSuchElementException("Deque is empty");
+        }
+
+        return rear.data;
     }
 
     /** Returns true if the deque contains no elements. */
     public boolean isEmpty() {
-        // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyDeque.isEmpty() not yet implemented");
+        return size == 0;
     }
 
     /** Returns the number of elements in the deque. */
     public int size() {
-        // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyDeque.size() not yet implemented");
+        return size;
     }
 }
