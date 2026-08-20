@@ -60,6 +60,37 @@ public class ServiceRequest implements Comparable<ServiceRequest> {
     public void setStatus(String status) { this.status = status; }
     public void setAssignedResourceId(int assignedResourceId) { this.assignedResourceId = assignedResourceId; }
 
+    // ── Derived field for Feature 7 (DP knapsack weight) ────────────────
+
+    /**
+     * Returns the estimated resolution time (in minutes) for this request,
+     * derived from its category. Used as the "weight/cost" in the 0/1
+     * knapsack dynamic-programming optimisation (Feature 7).
+     *
+     * Since requests.csv has no explicit "time to complete" column, these
+     * are fixed, documented estimates agreed upon by the team:
+     *
+     *   electrical  → 60 min
+     *   plumbing    → 90 min
+     *   IT          → 45 min
+     *   cleaning    → 30 min
+     *   structural  → 120 min
+     *   (unknown)   → 60 min  (safe default)
+     *
+     * @return estimated resolution time in minutes
+     */
+    public int getEstimatedTime() {
+        if (category == null) return 60;
+        switch (category.toLowerCase()) {
+            case "electrical":  return 60;
+            case "plumbing":    return 90;
+            case "it":          return 45;
+            case "cleaning":    return 30;
+            case "structural":  return 120;
+            default:            return 60;
+        }
+    }
+
     @Override
     public String toString() {
         return String.format("ServiceRequest[id=%d, loc=%d, cat='%s', urgency=%d, status='%s']",
