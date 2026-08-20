@@ -4,8 +4,12 @@ import java.util.NoSuchElementException;
 
 /**
  * A generic stack (LIFO — Last In, First Out).
- * Think of it like a stack of plates: the last plate placed on top is the first one removed.
- * This is a custom implementation — do NOT use java.util.Stack or java.util.ArrayDeque.
+ *
+ * Think of it like a stack of plates:
+ * the last plate placed on top is the first one removed.
+ *
+ * This is a custom implementation — do NOT use
+ * java.util.Stack or java.util.ArrayDeque.
  *
  * Feature 2 — Linear Structures
  *
@@ -15,8 +19,7 @@ import java.util.NoSuchElementException;
  */
 public class MyStack<T> {
 
-    // TODO: Feature 2 team — choose internal storage (array or linked list)
-      // Internal storage for stack elements
+    // Internal storage for stack elements
     private Object[] elements;
 
     // Number of elements currently in the stack
@@ -25,14 +28,12 @@ public class MyStack<T> {
     // Initial capacity of the stack
     private static final int DEFAULT_CAPACITY = 10;
 
-     
-
-
-    /** Creates an empty stack. */
+    /**
+     * Creates an empty stack.
+     */
     public MyStack() {
-        // TODO: Feature 2 team — implement this
-         elements = new Object[DEFAULT_CAPACITY];
-         size = 0;
+        elements = new Object[DEFAULT_CAPACITY];
+        size = 0;
     }
 
     /**
@@ -41,8 +42,8 @@ public class MyStack<T> {
      * @param element the element to push
      */
     public void push(T element) {
-        // TODO: Feature 2 team — implement this
-           // Resize the array if it is full
+
+        // Resize the array if it is full
         if (size == elements.length) {
             resize();
         }
@@ -60,11 +61,14 @@ public class MyStack<T> {
      * @return the top element
      * @throws NoSuchElementException if the stack is empty
      */
+    @SuppressWarnings("unchecked")
     public T pop() {
-        // TODO: Feature 2 team — implement this
-         // A stack cannot be popped when empty
+
+        // A stack cannot be popped when empty
         if (isEmpty()) {
-            throw new NoSuchElementException("Cannot pop from an empty stack");
+            throw new NoSuchElementException(
+                    "Cannot pop from an empty stack"
+            );
         }
 
         // Get the top element
@@ -85,12 +89,14 @@ public class MyStack<T> {
      * @return the top element
      * @throws NoSuchElementException if the stack is empty
      */
+    @SuppressWarnings("unchecked")
     public T peek() {
-        // TODO: Feature 2 team — implement this
-        
+
         // A stack cannot be peeked when empty
         if (isEmpty()) {
-            throw new NoSuchElementException("Cannot peek at an empty stack");
+            throw new NoSuchElementException(
+                    "Cannot peek at an empty stack"
+            );
         }
 
         return (T) elements[size - 1];
@@ -98,23 +104,26 @@ public class MyStack<T> {
 
     /**
      * Returns true if the stack contains no elements.
+     *
+     * @return true if the stack is empty, otherwise false
      */
     public boolean isEmpty() {
-        // TODO: Feature 2 team — implement this
         return size == 0;
     }
 
     /**
      * Returns the number of elements in the stack.
+     *
+     * @return the number of elements
      */
     public int size() {
-        // TODO: Feature 2 team — implement this
         return size;
     }
-     /**
-      * Doubles the capacity of the internal arrayubles the capacity of the internal array
-      */
-     private void resize() {
+
+    /**
+     * Doubles the capacity of the internal array.
+     */
+    private void resize() {
 
         Object[] newElements = new Object[elements.length * 2];
 
@@ -129,5 +138,4 @@ public class MyStack<T> {
 
         elements = newElements;
     }
-
 }
