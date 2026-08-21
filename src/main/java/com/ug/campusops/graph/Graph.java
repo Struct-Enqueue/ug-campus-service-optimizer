@@ -133,6 +133,16 @@ public class Graph {
     /** Returns the number of edges (routes) in the graph. */
     public int getEdgeCount() { return edgeCount; }
 
+    /** Returns the IDs of every vertex currently in the graph. */
+    public int[] getVertexIds() {
+        int[] result = new int[adjacencyList.size()];
+        int i = 0;
+        for (int id : adjacencyList.keySet()) {
+            result[i++] = id;
+        }
+        return result;
+    }
+
     private void ensureCapacity(int minimumSize) {
         if (minimumSize <= maxVertices) {
             return;

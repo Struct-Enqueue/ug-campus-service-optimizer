@@ -3,6 +3,9 @@ package com.ug.campusops.graph;
 import com.ug.campusops.datastructures.DisjointSet;
 import com.ug.campusops.graph.Prim.MSTResult;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Kruskal's algorithm for finding the Minimum Spanning Tree (MST) of the campus graph.
  * Sorts all edges by weight and greedily adds the cheapest edge that doesn't create a cycle.
@@ -22,20 +25,39 @@ public class Kruskal {
      *         (reuses the same result class for consistency)
      */
     public static Prim.MSTResult minimumSpanningTree(Graph graph) {
-        collect every edge (fromId, toId, weight) by iterating graph.getVertexIds() and calling
-        graph.getNeighbors(id) + graph.getWeight(id, neighbor) for each
-        sort edges by weight ascending
-        ds = new DisjointSet(maxVertexId + 1)   // size big enough to cover every vertex id used
-        result = new MSTResult(graph.getVertexCount() - 1)
+        int[] vertexIds = graph.getVertexIds();
+        List<int[]> edges = new ArrayList<>();
+        int maxVertexId = 0;
 
-        for each edge in sorted order:
-            if ds.find(edge.fromId) != ds.find(edge.toId):
-                ds.union(edge.fromId, edge.toId)
-                record edge into result
-            if result.edgeCount == graph.getVertexCount() - 1: break
+        for (int id : vertexIds) {
+            maxVertexId = Math.max(maxVertexId, id);
+            for (int neighbor : graph.getNeighbors(id)) {
+                maxVertexId = Math.max(maxVertexId, neighbor);
+                edges.add(new int[] {id, neighbor});
+            }
+        }
+        edges.sort((a, b) -> Double.compare(graph.getWeight(a[0], a[1]), graph.getWeight(b[0], b[1])));
 
-        return result
-     
-        throw new UnsupportedOperationException("Kruskal.minimumSpanningTree() not yet implemented");
+        DisjointSet ds = new DisjointSet(maxVertexId + 1);
+        MSTResult result = new MSTResult(Math.max(0, graph.getVertexCount() - 1));
+
+        for (int[] edge : edges) {
+            int fromId = edge[0];
+            int toId = edge[1];
+            if (ds.find(fromId) != ds.find(toId)) {
+                ds.union(fromId, toId);
+                double weight = graph.getWeight(fromId, toId);
+                result.edges[result.edgeCount][0] = fromId;
+                result.edges[result.edgeCount][1] = toId;
+                result.weights[result.edgeCount] = weight;
+                result.edgeCount++;
+                result.totalCost += weight;
+            }
+            if (result.edgeCount == graph.getVertexCount() - 1) {
+                break;
+            }
+        }
+
+        return result;
     }
 }

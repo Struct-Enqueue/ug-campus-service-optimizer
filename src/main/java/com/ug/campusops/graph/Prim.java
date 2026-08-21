@@ -1,6 +1,9 @@
 package com.ug.campusops.graph;
 
+import com.ug.campusops.datastructures.MyPriorityQueue;
+
 import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Prim's algorithm for finding the Minimum Spanning Tree (MST) of the campus graph.
@@ -39,23 +42,59 @@ public class Prim {
      * @return an MSTResult containing the MST edges and total cost
      */
     public static MSTResult minimumSpanningTree(Graph graph) {
-        inTree = new HashSet<Integer>()
-        result = new MSTResult(graph.getVertexCount() - 1)
-        pick any vertex (e.g. graph.getVertexIds()[0]) as start, add to inTree
-        pq = new MyPriorityQueue<Edge>()   // small wrapper class: {fromId, toId, weight}, compareTo by weight
-        push all edges out of start into pq
+        MSTResult result = new MSTResult(Math.max(0, graph.getVertexCount() - 1));
+        int[] vertexIds = graph.getVertexIds();
+        if (vertexIds.length == 0) {
+            return result;
+        }
 
-        while inTree.size() < graph.getVertexCount():
-            edge = pq.extractMin()
-            if edge.toId already in inTree: continue      // skip, would form a cycle
-            add edge.toId to inTree
-            record edge into result (edges[][], weights[], edgeCount++, totalCost += weight)
-            for each neighbor of edge.toId not in inTree:
-                push new Edge(edge.toId, neighbor, graph.getWeight(edge.toId, neighbor))
+        Set<Integer> inTree = new HashSet<>();
+        MyPriorityQueue<Edge> pq = new MyPriorityQueue<>();
 
-        return result
-                
-     
-        throw new UnsupportedOperationException("Prim.minimumSpanningTree() not yet implemented");
+        int start = vertexIds[0];
+        inTree.add(start);
+        pushEdgesFrom(graph, start, inTree, pq);
+
+        while (inTree.size() < graph.getVertexCount() && !pq.isEmpty()) {
+            Edge edge = pq.extractMin();
+            if (inTree.contains(edge.toId)) {
+                continue;
+            }
+            inTree.add(edge.toId);
+            result.edges[result.edgeCount][0] = edge.fromId;
+            result.edges[result.edgeCount][1] = edge.toId;
+            result.weights[result.edgeCount] = edge.weight;
+            result.edgeCount++;
+            result.totalCost += edge.weight;
+
+            pushEdgesFrom(graph, edge.toId, inTree, pq);
+        }
+
+        return result;
+    }
+
+    private static void pushEdgesFrom(Graph graph, int fromId, Set<Integer> inTree, MyPriorityQueue<Edge> pq) {
+        for (int neighbor : graph.getNeighbors(fromId)) {
+            if (!inTree.contains(neighbor)) {
+                pq.insert(new Edge(fromId, neighbor, graph.getWeight(fromId, neighbor)));
+            }
+        }
+    }
+
+    private static class Edge implements Comparable<Edge> {
+        final int fromId;
+        final int toId;
+        final double weight;
+
+        Edge(int fromId, int toId, double weight) {
+            this.fromId = fromId;
+            this.toId = toId;
+            this.weight = weight;
+        }
+
+        @Override
+        public int compareTo(Edge other) {
+            return Double.compare(weight, other.weight);
+        }
     }
 }
