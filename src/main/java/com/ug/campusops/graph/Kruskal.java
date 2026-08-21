@@ -1,5 +1,8 @@
 package com.ug.campusops.graph;
 
+import com.ug.campusops.datastructures.DisjointSet;
+import com.ug.campusops.graph.Prim.MSTResult;
+
 /**
  * Kruskal's algorithm for finding the Minimum Spanning Tree (MST) of the campus graph.
  * Sorts all edges by weight and greedily adds the cheapest edge that doesn't create a cycle.
@@ -19,13 +22,20 @@ public class Kruskal {
      *         (reuses the same result class for consistency)
      */
     public static Prim.MSTResult minimumSpanningTree(Graph graph) {
-        // TODO: Feature 5 team — implement this
-        //   Uses DisjointSet (from Feature 4) to detect cycles.
-        //   1. Collect all edges, sort by weight (use SortAlgorithms from Feature 6)
-        //   2. For each edge (cheapest first):
-        //      - If the two endpoints are in different sets (find), add edge to MST (union)
-        //      - If same set, skip (would create a cycle)
-        //   3. Stop when we have (V-1) edges
+        collect every edge (fromId, toId, weight) by iterating graph.getVertexIds() and calling
+        graph.getNeighbors(id) + graph.getWeight(id, neighbor) for each
+        sort edges by weight ascending
+        ds = new DisjointSet(maxVertexId + 1)   // size big enough to cover every vertex id used
+        result = new MSTResult(graph.getVertexCount() - 1)
+
+        for each edge in sorted order:
+            if ds.find(edge.fromId) != ds.find(edge.toId):
+                ds.union(edge.fromId, edge.toId)
+                record edge into result
+            if result.edgeCount == graph.getVertexCount() - 1: break
+
+        return result
+     
         throw new UnsupportedOperationException("Kruskal.minimumSpanningTree() not yet implemented");
     }
 }

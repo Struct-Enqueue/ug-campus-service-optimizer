@@ -1,5 +1,7 @@
 package com.ug.campusops.graph;
 
+import java.util.HashSet;
+
 /**
  * Prim's algorithm for finding the Minimum Spanning Tree (MST) of the campus graph.
  * Finds the cheapest way to connect all campus locations together.
@@ -37,12 +39,23 @@ public class Prim {
      * @return an MSTResult containing the MST edges and total cost
      */
     public static MSTResult minimumSpanningTree(Graph graph) {
-        // TODO: Feature 5 team — implement this
-        //   Use MyPriorityQueue to always pick the cheapest edge next.
-        //   1. Start with any vertex in the MST set
-        //   2. Add all edges from MST set to non-MST vertices into priority queue
-        //   3. Extract min edge, add its vertex to MST set
-        //   4. Repeat until all vertices are in MST
+        inTree = new HashSet<Integer>()
+        result = new MSTResult(graph.getVertexCount() - 1)
+        pick any vertex (e.g. graph.getVertexIds()[0]) as start, add to inTree
+        pq = new MyPriorityQueue<Edge>()   // small wrapper class: {fromId, toId, weight}, compareTo by weight
+        push all edges out of start into pq
+
+        while inTree.size() < graph.getVertexCount():
+            edge = pq.extractMin()
+            if edge.toId already in inTree: continue      // skip, would form a cycle
+            add edge.toId to inTree
+            record edge into result (edges[][], weights[], edgeCount++, totalCost += weight)
+            for each neighbor of edge.toId not in inTree:
+                push new Edge(edge.toId, neighbor, graph.getWeight(edge.toId, neighbor))
+
+        return result
+                
+     
         throw new UnsupportedOperationException("Prim.minimumSpanningTree() not yet implemented");
     }
 }
