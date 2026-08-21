@@ -41,8 +41,14 @@ public class DisjointSet {
      * @param x the element to make a set for
      */
     public void makeSet(int x) {
-        // TODO: Feature 4 team — implement this
-        throw new UnsupportedOperationException("DisjointSet.makeSet() not yet implemented");
+        if (x < 0 || x >= parent.length) {
+            throw new IllegalArgumentException("Element out of range: " + x);
+        }
+        if (parent[x] != x || rank[x] != 0) {
+            parent[x] = x;
+            rank[x] = 0;
+            count++;
+        }
     }
 
     /**
@@ -53,8 +59,13 @@ public class DisjointSet {
      * @return the root representative of x's set
      */
     public int find(int x) {
-        // TODO: Feature 4 team — implement this WITH path compression
-        throw new UnsupportedOperationException("DisjointSet.find() not yet implemented");
+        if (x < 0 || x >= parent.length) {
+            throw new IllegalArgumentException("Element out of range: " + x);
+        }
+        if (parent[x] != x) {
+            parent[x] = find(parent[x]);
+        }
+        return parent[x];
     }
 
     /**
@@ -66,8 +77,27 @@ public class DisjointSet {
      * @return true if the sets were different and got merged, false if already in same set
      */
     public boolean union(int a, int b) {
-        // TODO: Feature 4 team — implement this WITH union by rank
-        throw new UnsupportedOperationException("DisjointSet.union() not yet implemented");
+        if (a < 0 || a >= parent.length || b < 0 || b >= parent.length) {
+            throw new IllegalArgumentException("Element out of range: " + a + ", " + b);
+        }
+
+        int rootA = find(a);
+        int rootB = find(b);
+        if (rootA == rootB) {
+            return false;
+        }
+
+        if (rank[rootA] < rank[rootB]) {
+            parent[rootA] = rootB;
+        } else if (rank[rootA] > rank[rootB]) {
+            parent[rootB] = rootA;
+        } else {
+            parent[rootB] = rootA;
+            rank[rootA]++;
+        }
+
+        count--;
+        return true;
     }
 
     /**
@@ -78,8 +108,7 @@ public class DisjointSet {
      * @return true if connected (same set)
      */
     public boolean connected(int a, int b) {
-        // TODO: Feature 4 team — implement this (hint: compare find(a) and find(b))
-        throw new UnsupportedOperationException("DisjointSet.connected() not yet implemented");
+        return find(a) == find(b);
     }
 
     /**
