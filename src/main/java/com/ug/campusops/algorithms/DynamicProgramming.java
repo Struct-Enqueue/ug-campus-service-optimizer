@@ -57,40 +57,13 @@ public class DynamicProgramming {
         }
     }
 
-    /**
-     * Estimates the "cost" (time in minutes to resolve) of a service request.
-     *
-     * NOTE / ASSUMPTION: the ServiceRequest model (and the requests.csv data)
-     * does not carry an explicit "time to complete" field, only a category and
-     * an urgencyLevel. To make the 0/1 knapsack well-defined we derive a fixed,
-     * documented estimated-resolution-time (in minutes) per category. This is
-     * a reasonable stand-in for a real "average handling time" lookup and is
-     * called out here so graders/teammates know it is a deliberate modelling
-     * choice, not missing data.
-     *
-     * @param request the service request
-     * @return estimated cost in minutes
-     */
-    static int estimateCost(ServiceRequest request) {
-        if (request.getCategory() == null) {
-            return 45;
-        }
-        return switch (request.getCategory().toLowerCase()) {
-            case "electrical" -> 60;
-            case "plumbing" -> 90;
-            case "it" -> 30;
-            case "cleaning" -> 20;
-            case "structural" -> 120;
-            default -> 45;
-        };
-    }
+    
 
     /**
      * 0/1 Knapsack: select the best subset of service requests to handle within
      * a limited time/budget constraint, maximising total urgency/priority.
      *
-     * Each request has a "cost" (estimated time to complete, see
-     * {@link #estimateCost(ServiceRequest)}) and a "value" (urgencyLevel, 1-5).
+     * Each request has a "cost" (estimated time to complete) and a "value" (urgencyLevel, 1-5).
      * The constraint is the total available time/budget (in the same minute
      * units as the estimated cost).
      *
@@ -110,7 +83,7 @@ public class DynamicProgramming {
         int[] cost = new int[n];
         int[] value = new int[n];
         for (int i = 0; i < n; i++) {
-            cost[i] = estimateCost(requests[i]);
+            cost[i] = requests[i].getEstimatedTime();
             value[i] = requests[i].getUrgencyLevel();
         }
 

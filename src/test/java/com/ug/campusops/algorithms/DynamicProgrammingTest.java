@@ -114,7 +114,7 @@ class DynamicProgrammingTest {
     /**
      * Replaces testOptimalRouteBudgetMatchesBruteForce and
      * testRequestKnapsackWithServiceRequests together: cost/value pairs are
-     * derived from real pending requests (via the same estimateCost()/
+     * derived from real pending requests (via the same getEstimatedTime()/
      * getUrgencyLevel() the algorithm itself uses), then requestKnapsack's
      * result is cross-checked against a brute-force search over those exact
      * real values. Limited to 15 real requests to keep 2^n brute force fast.
@@ -130,7 +130,7 @@ class DynamicProgrammingTest {
         int[] cost = new int[reqArr.length];
         int[] value = new int[reqArr.length];
         for (int i = 0; i < reqArr.length; i++) {
-            cost[i] = DynamicProgramming.estimateCost(reqArr[i]);
+            cost[i] = reqArr[i].getEstimatedTime();
             value[i] = reqArr[i].getUrgencyLevel();
         }
 
@@ -178,7 +178,7 @@ class DynamicProgrammingTest {
         Assumptions.assumeTrue(!requests.isEmpty(), "No pending requests in DB to test with");
 
         ServiceRequest[] reqArr = { requests.get(0) };
-        int exactCost = DynamicProgramming.estimateCost(reqArr[0]);
+        int exactCost = reqArr[0].getEstimatedTime();
 
         DynamicProgramming.KnapsackResult result = DynamicProgramming.requestKnapsack(reqArr, exactCost);
 
@@ -204,7 +204,7 @@ class DynamicProgrammingTest {
         int totalCost = 0, totalValue = 0;
         for (int i = 0; i < reqArr.length; i++) {
             if (result.selectedItems[i]) {
-                totalCost += DynamicProgramming.estimateCost(reqArr[i]);
+                totalCost += reqArr[i].getEstimatedTime();
                 totalValue += reqArr[i].getUrgencyLevel();
             }
         }
