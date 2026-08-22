@@ -34,6 +34,8 @@ public class ConsoleMenu {
     private Scanner scanner;
     private List<ServiceRequest> pendingRequests;
     private List<Location> locations;
+    private Map<Integer, List<RouteEdge>> adjacencyList;
+    private Map<Integer, String> locationNames;
 
     /** Creates the console menu. */
     public ConsoleMenu() {
@@ -41,12 +43,115 @@ public class ConsoleMenu {
     this.pendingRequests = new ArrayList<>();
     this.locations = new ArrayList<>();
     loadLocations();
+    loadRoutes();
 }
 
     /**
      * Displays the main menu and processes user choices in a loop.
      * This is the entry point — called from Main.java.
      */
+
+    private static class RouteEdge {
+    int toId;
+    int distance;
+    double trafficFactor;
+
+    RouteEdge(int toId, int distance, double trafficFactor) {
+        this.toId = toId;
+        this.distance = distance;
+        this.trafficFactor = trafficFactor;
+    }
+
+    double getWeight() {
+        return distance * trafficFactor;
+    }
+}
+    private void findFastestRoute() {
+    System.out.println("\n Find Fastest Route Between Locations");
+    System.out.println("------------------------------------");
+    
+    if (adjacencyList == null || adjacencyList.isEmpty()) {
+        System.out.println(" Route data not loaded. Please ensure routes.csv exists.");
+        return;
+    }
+    
+    System.out.print("Enter start location ID: ");
+    int startId = scanner.nextInt();
+    scanner.nextLine();
+    
+    System.out.print("Enter destination location ID: ");
+    int destId = scanner.nextInt();
+    scanner.nextLine();
+    
+    if (!locationNames.containsKey(startId)) {
+        System.out.println(" Invalid start location ID.");
+        return;
+    }
+    if (!locationNames.containsKey(destId)) {
+        System.out.println(" Invalid destination location ID.");
+        return;
+    }
+    
+    // Run Dijkstra
+    Map<Integer, Double> distances = new HashMap<>();
+    Map<Integer, Integer> predecessors = new HashMap<>();
+    java.util.PriorityQueue<int[]> pq = new java.util.PriorityQueue<>((a, b) -> Double.compare(a[1], b[1]));
+    
+    for (int id : locationNames.keySet()) {
+        distances.put(id, Double.MAX_VALUE);
+    }
+    distances.put(startId, 0.0);
+    pq.offer(new int[]{startId, 0});
+    
+    while (!pq.isEmpty()) {
+        int[] current = pq.poll();
+        int currentId = current[0];
+        double currentDist = current[1];
+        
+        if (currentDist > distances.get(currentId)) continue;
+        if (currentId == destId) break;
+        
+        List<RouteEdge> edges = adjacencyList.get(currentId);
+        if (edges == null) continue;
+        
+        for (RouteEdge edge : edges) {
+            double newDist = currentDist + edge.getWeight();
+            if (newDist < distances.get(edge.toId)) {
+                distances.put(edge.toId, newDist);
+                predecessors.put(edge.toId, currentId);
+                pq.offer(new int[]{edge.toId, (int) newDist});
+            }
+        }
+    }
+    
+    // Display result
+    if (distances.get(destId) == Double.MAX_VALUE) {
+        System.out.println(" No route found between " + startId + " and " + destId);
+        return;
+    }
+    
+    // Reconstruct path
+    List<Integer> path = new ArrayList<>();
+    int current = destId;
+    while (current != startId) {
+        path.add(current);
+        current = predecessors.getOrDefault(current, -1);
+        if (current == -1) break;
+    }
+    path.add(startId);
+    Collections.reverse(path);
+    
+    System.out.println("\n Shortest route found!");
+    System.out.println("   Total distance: " + Math.round(distances.get(destId)) + " meters");
+    System.out.println("   Path: ");
+    for (int i = 0; i < path.size(); i++) {
+        int id = path.get(i);
+        System.out.print("   " + (i+1) + ". " + locationNames.get(id));
+        if (i < path.size() - 1) System.out.println(" →");
+    }
+    System.out.println();
+}
+
     public void start() {
         int choice;
 
@@ -75,8 +180,7 @@ public class ConsoleMenu {
                     break;
 
                 case 4:
-                    System.out.println("[Option 4] Find fastest route between locations - Coming soon!");
-                    // TODO: Later, call Dijkstra.shortestPath()
+                    findFastestRoute();
                     break;
 
                 case 5:
@@ -384,6 +488,42 @@ private void loadLocations() {
         System.out.println("[INFO] Loaded " + locations.size() + " locations from CSV.");
     } catch (Exception e) {
         System.out.println("[WARNING] Could not load locations: " + e.getMessage());
+    }
+}
+
+private void loadRoutes() {
+    adjacencyList = new HashMap<>();
+    locationNames = new HashMap<>();
+    String filePath = "data/routes.csv";
+    
+    try (java.io.BufferedReader br = new java.io.BufferedReader(new java.io.FileReader(filePath))) {
+        String line = br.readLine(); // skip header
+        while ((line = br.readLine()) != null) {
+            String[] parts = line.split(",");
+            if (parts.length >= 6) {
+                int fromId = Integer.parseInt(parts[1]);
+                int toId = Integer.parseInt(parts[2]);
+                int distance = Integer.parseInt(parts[3]);
+                int avgTime = Integer.parseInt(parts[4]);
+                double trafficFactor = Double.parseDouble(parts[5]);
+                
+                // Add edge from -> to
+                adjacencyList.putIfAbsent(fromId, new ArrayList<>());
+                adjacencyList.get(fromId).add(new RouteEdge(toId, distance, trafficFactor));
+                
+                // Add reverse edge (bidirectional)
+                adjacencyList.putIfAbsent(toId, new ArrayList<>());
+                adjacencyList.get(toId).add(new RouteEdge(fromId, distance, trafficFactor));
+            }
+        }
+        System.out.println("[INFO] Loaded routes from CSV.");
+    } catch (Exception e) {
+        System.out.println("[WARNING] Could not load routes: " + e.getMessage());
+    }
+    
+    // Build location name map from the locations list
+    for (Location loc : locations) {
+        locationNames.put(loc.getLocationId(), loc.getName());
     }
 }
 
