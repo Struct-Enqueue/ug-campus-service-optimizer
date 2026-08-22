@@ -28,6 +28,9 @@ public class Main {
         System.out.println("==============================================");
         System.out.println();
 
+        ConsoleMenu menu = new ConsoleMenu();
+        menu.start();
+
         // TODO: All teams — wire up the startup sequence here once features are ready
         //
         // Step 1: Connect to database
