@@ -147,7 +147,7 @@
 - [ ] PriorityQueue dispatch order trace (insert 10 requests by urgency, extract in order)
 - [ ] Graph loaded with at least 10 campus locations and 15 routes
 - [ ] `getNeighbors()` returns correct neighbors for a given location
-- [ ] DisjointSet Kruskal connectivity trace
+- [ ] DisjointSet Kruskal connectivity traceííí
 - [ ] All tests passing
 
 #### Suggested Split

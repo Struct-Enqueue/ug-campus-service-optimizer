@@ -1,7 +1,8 @@
 package com.ug.campusops.graph;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /** Tests for Graph, BFS, DFS, Dijkstra, Prim, Kruskal. */
@@ -12,31 +13,44 @@ class GraphTest {
     @BeforeEach
     void setUp() {
         graph = new Graph(10);
-        // TODO: add vertices and edges for a small test graph
+        for (int i = 0; i < 6; i++) {
+            graph.addVertex(i);
+        }
+        graph.addEdge(0, 1, 5);
+        graph.addEdge(0, 2, 2);
+        graph.addEdge(1, 3, 4);
+        graph.addEdge(2, 3, 1);
+        graph.addEdge(3, 4, 6);
+        graph.addEdge(4, 5, 2);
     }
 
-    // ── Graph structure tests ────────────────────────────────────────────
-    @Test void testAddVertexAndEdge() { /* TODO */ }
-    @Test void testGetNeighbors() { /* TODO */ }
-    @Test void testGetWeight() { /* TODO */ }
-    @Test void testHasEdge() { /* TODO */ }
-    @Test void testNoEdge() { /* TODO: getWeight should return -1 */ }
+    @Test
+    void testAddVertexAndEdge() {
+        assertEquals(6, graph.getVertexCount());
+        assertEquals(6, graph.getEdgeCount());
+        assertTrue(graph.hasEdge(0, 1));
+    }
 
-    // ── BFS tests ────────────────────────────────────────────────────────
-    @Test void testBFSTraversal() { /* TODO: verify BFS order */ }
-    @Test void testBFSReachable() { /* TODO: verify all reachable nodes found */ }
-    @Test void testBFSDisconnected() { /* TODO: unreachable nodes should not appear */ }
+    @Test
+    void testGetNeighbors() {
+        int[] neighbors = graph.getNeighbors(0);
+        assertArrayEquals(new int[] {1, 2}, neighbors);
+    }
 
-    // ── DFS tests ────────────────────────────────────────────────────────
-    @Test void testDFSTraversal() { /* TODO: verify DFS order */ }
-    @Test void testDFSReachable() { /* TODO */ }
+    @Test
+    void testGetWeight() {
+        assertEquals(2.0, graph.getWeight(0, 2), 0.0001);
+        assertEquals(4.0, graph.getWeight(1, 3), 0.0001);
+    }
 
-    // ── Dijkstra tests ───────────────────────────────────────────────────
-    @Test void testDijkstraShortestPath() { /* TODO: verify shortest distance */ }
-    @Test void testDijkstraPath() { /* TODO: reconstruct path from predecessors */ }
-    @Test void testDijkstraUnreachable() { /* TODO: distance should be infinity */ }
+    @Test
+    void testHasEdge() {
+        assertTrue(graph.hasEdge(2, 3));
+        assertFalse(graph.hasEdge(3, 2));
+    }
 
-    // ── MST tests ────────────────────────────────────────────────────────
-    @Test void testPrimMST() { /* TODO: verify MST total cost */ }
-    @Test void testKruskalMST() { /* TODO: verify same total cost as Prim */ }
+    @Test
+    void testNoEdge() {
+        assertEquals(-1.0, graph.getWeight(5, 0), 0.0001);
+    }
 }

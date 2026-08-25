@@ -16,10 +16,23 @@ import java.util.NoSuchElementException;
 public class MyStack<T> {
 
     // TODO: Feature 2 team — choose internal storage (array or linked list)
+      // Internal storage for stack elements
+    private Object[] elements;
+
+    // Number of elements currently in the stack
+    private int size;
+
+    // Initial capacity of the stack
+    private static final int DEFAULT_CAPACITY = 10;
+
+     
+
 
     /** Creates an empty stack. */
     public MyStack() {
         // TODO: Feature 2 team — implement this
+         elements = new Object[DEFAULT_CAPACITY];
+         size = 0;
     }
 
     /**
@@ -29,7 +42,16 @@ public class MyStack<T> {
      */
     public void push(T element) {
         // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyStack.push() not yet implemented");
+           // Resize the array if it is full
+        if (size == elements.length) {
+            resize();
+        }
+
+        // Add the element at the top
+        elements[size] = element;
+
+        // Increase the number of elements
+        size++;
     }
 
     /**
@@ -40,7 +62,21 @@ public class MyStack<T> {
      */
     public T pop() {
         // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyStack.pop() not yet implemented");
+         // A stack cannot be popped when empty
+        if (isEmpty()) {
+            throw new NoSuchElementException("Cannot pop from an empty stack");
+        }
+
+        // Get the top element
+        T element = (T) elements[size - 1];
+
+        // Remove the reference from the array
+        elements[size - 1] = null;
+
+        // Decrease the size
+        size--;
+
+        return element;
     }
 
     /**
@@ -51,7 +87,13 @@ public class MyStack<T> {
      */
     public T peek() {
         // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyStack.peek() not yet implemented");
+        
+        // A stack cannot be peeked when empty
+        if (isEmpty()) {
+            throw new NoSuchElementException("Cannot peek at an empty stack");
+        }
+
+        return (T) elements[size - 1];
     }
 
     /**
@@ -59,7 +101,7 @@ public class MyStack<T> {
      */
     public boolean isEmpty() {
         // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyStack.isEmpty() not yet implemented");
+        return size == 0;
     }
 
     /**
@@ -67,6 +109,25 @@ public class MyStack<T> {
      */
     public int size() {
         // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyStack.size() not yet implemented");
+        return size;
     }
+     /**
+      * Doubles the capacity of the internal arrayubles the capacity of the internal array
+      */
+     private void resize() {
+
+        Object[] newElements = new Object[elements.length * 2];
+
+        // Copy existing elements into the new array
+        System.arraycopy(
+                elements,
+                0,
+                newElements,
+                0,
+                elements.length
+        );
+
+        elements = newElements;
+    }
+
 }
