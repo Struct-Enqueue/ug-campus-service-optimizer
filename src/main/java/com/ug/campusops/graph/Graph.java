@@ -114,6 +114,9 @@ public class Graph {
         if (fromId < 0 || toId < 0 || fromId >= adjacencyMatrix.length || toId >= adjacencyMatrix.length) {
             return -1.0;
         }
+        if (fromId == toId) {
+            return 0.0;
+        }
         return adjacencyMatrix[fromId][toId];
     }
 
