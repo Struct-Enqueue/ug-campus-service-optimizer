@@ -1,8 +1,12 @@
 package com.ug.campusops.datastructures;
 
+import com.ug.campusops.db.DatabaseConnector;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -11,95 +15,183 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests for CircularQueue.
+ * Tests for CircularQueue using real campus data from PostgreSQL.
  *
- * Required coverage:
- * - Basic enqueue/dequeue operations
- * - Circular wrap-around behavior
- * - Full queue edge case
- * - Empty queue edge case
- * - Front and rear index tracking
+ * Feature 2 — Linear Structures
+ *
+ * Required evidence:
+ * - FIFO enqueue/dequeue behavior
+ * - Full/empty edge cases
+ * - Front/rear movement
+ * - Circular wrap-around
+ * - Use of PostgreSQL campus data
  */
 class CircularQueueTest {
 
     private static final int CAPACITY = 5;
 
-    private CircularQueue<Integer> cq;
+    private CircularQueue<String> queue;
+    private DatabaseConnector db;
 
     @BeforeEach
     void setUp() {
-        cq = new CircularQueue<>(CAPACITY);
+        queue = new CircularQueue<>(CAPACITY);
+        db = new DatabaseConnector();
     }
 
     /**
-     * Tests basic enqueue and dequeue operations.
+     * Loads real campus locations from PostgreSQL.
      */
-    @Test
-    void testEnqueueDequeue() {
-        cq.enqueue(10);
-        cq.enqueue(20);
+    private List<String> loadLocations(int limit) throws Exception {
 
-        assertEquals(10, cq.dequeue());
-        assertEquals(20, cq.dequeue());
+        List<String> locations = new ArrayList<>();
 
-        assertTrue(cq.isEmpty());
-    }
+        ResultSet rs = db.executeQuery(
+                "SELECT location_id, name " +
+                "FROM locations " +
+                "ORDER BY location_id " +
+                "LIMIT " + limit
+        );
 
-    /**
-     * Tests circular wrap-around behavior.
-     */
-    @Test
-    void testWrapAround() {
+        while (rs.next()) {
+            String location =
+                    rs.getInt("location_id") + " - " +
+                    rs.getString("name");
 
-        // Fill all 5 slots
-        for (int i = 1; i <= CAPACITY; i++) {
-            cq.enqueue(i * 10);
+            locations.add(location);
         }
 
-        // Remove two elements
-        assertEquals(10, cq.dequeue());
-        assertEquals(20, cq.dequeue());
+        rs.close();
 
-        // Add two more elements.
-        // Rear should wrap around.
-        cq.enqueue(60);
-        cq.enqueue(70);
+        return locations;
+    }
 
-        // Logical queue:
-        // 30, 40, 50, 60, 70
-        assertEquals(30, cq.dequeue());
-        assertEquals(40, cq.dequeue());
-        assertEquals(50, cq.dequeue());
-        assertEquals(60, cq.dequeue());
-        assertEquals(70, cq.dequeue());
+    /**
+     * Tests basic FIFO enqueue/dequeue behavior
+     * using real PostgreSQL campus locations.
+     */
+    @Test
+    void testEnqueueDequeue() throws Exception {
 
-        assertTrue(cq.isEmpty());
+        List<String> locations = loadLocations(2);
+
+        assertEquals(
+                2,
+                locations.size(),
+                "Database should return at least 2 campus locations"
+        );
+
+        queue.enqueue(locations.get(0));
+        queue.enqueue(locations.get(1));
+
+        assertEquals(locations.get(0), queue.dequeue());
+        assertEquals(locations.get(1), queue.dequeue());
+
+        assertTrue(queue.isEmpty());
+    }
+
+    /**
+     * Tests circular wrap-around using real PostgreSQL data.
+     *
+     * Trace:
+     *
+     * Initial:
+     * front = 0
+     * rear  = -1
+     *
+     * Enqueue 5 locations:
+     * rear: 0 -> 1 -> 2 -> 3 -> 4
+     *
+     * Dequeue 2:
+     * front: 0 -> 1 -> 2
+     *
+     * Enqueue 2 more:
+     * rear: 4 -> 0 -> 1
+     *
+     * This demonstrates rear wrapping around.
+     */
+    @Test
+    void testWrapAround() throws Exception {
+
+        List<String> locations = loadLocations(5);
+
+        assertEquals(
+                5,
+                locations.size(),
+                "Database should return 5 campus locations"
+        );
+
+        // Fill queue.
+        for (String location : locations) {
+            queue.enqueue(location);
+        }
+
+        assertTrue(queue.isFull());
+
+        // Remove first two.
+        assertEquals(locations.get(0), queue.dequeue());
+        assertEquals(locations.get(1), queue.dequeue());
+
+        // Queue now contains:
+        // locations[2], locations[3], locations[4]
+
+        // Add two more real campus locations.
+        queue.enqueue(locations.get(0));
+        queue.enqueue(locations.get(1));
+
+        /*
+         * Rear has wrapped:
+         *
+         * rear:
+         * 0 -> 1
+         *
+         * Queue logically contains:
+         *
+         * locations[2]
+         * locations[3]
+         * locations[4]
+         * locations[0]
+         * locations[1]
+         */
+
+        assertEquals(locations.get(2), queue.dequeue());
+        assertEquals(locations.get(3), queue.dequeue());
+        assertEquals(locations.get(4), queue.dequeue());
+        assertEquals(locations.get(0), queue.dequeue());
+        assertEquals(locations.get(1), queue.dequeue());
+
+        assertTrue(queue.isEmpty());
     }
 
     /**
      * Tests the full queue condition.
      */
     @Test
-    void testIsFull() {
+    void testIsFull() throws Exception {
 
-        assertFalse(
-                cq.isFull(),
-                "Newly created queue should not be full"
+        List<String> locations = loadLocations(CAPACITY);
+
+        assertEquals(
+                CAPACITY,
+                locations.size(),
+                "Database should provide enough campus locations"
         );
 
-        for (int i = 0; i < CAPACITY; i++) {
-            cq.enqueue(i);
+        assertFalse(queue.isFull());
+
+        for (String location : locations) {
+            queue.enqueue(location);
         }
 
         assertTrue(
-                cq.isFull(),
+                queue.isFull(),
                 "Queue should be full after " + CAPACITY + " enqueues"
         );
 
-        cq.dequeue();
+        queue.dequeue();
 
         assertFalse(
-                cq.isFull(),
+                queue.isFull(),
                 "Queue should not be full after one dequeue"
         );
     }
@@ -108,134 +200,201 @@ class CircularQueueTest {
      * Tests the empty queue condition.
      */
     @Test
-    void testIsEmpty() {
+    void testIsEmpty() throws Exception {
 
         assertTrue(
-                cq.isEmpty(),
+                queue.isEmpty(),
                 "Newly created queue should be empty"
         );
 
-        cq.enqueue(42);
+        List<String> locations = loadLocations(1);
+
+        assertEquals(
+                1,
+                locations.size(),
+                "Database should return at least one campus location"
+        );
+
+        queue.enqueue(locations.get(0));
 
         assertFalse(
-                cq.isEmpty(),
+                queue.isEmpty(),
                 "Queue should not be empty after enqueue"
         );
 
-        cq.dequeue();
+        queue.dequeue();
 
         assertTrue(
-                cq.isEmpty(),
-                "Queue should be empty again after dequeue"
+                queue.isEmpty(),
+                "Queue should be empty after removing its only element"
         );
     }
 
     /**
-     * Tests that enqueueing into a full queue throws an exception.
+     * Tests that enqueueing into a full queue throws
+     * IllegalStateException.
      */
     @Test
-    void testEnqueueWhenFull() {
+    void testEnqueueWhenFull() throws Exception {
 
-        for (int i = 0; i < CAPACITY; i++) {
-            cq.enqueue(i);
+        List<String> locations = loadLocations(CAPACITY);
+
+        assertEquals(
+                CAPACITY,
+                locations.size(),
+                "Database should provide enough campus locations"
+        );
+
+        for (String location : locations) {
+            queue.enqueue(location);
         }
 
         assertThrows(
                 IllegalStateException.class,
-                () -> cq.enqueue(42),
-                "Enqueueing to a full queue should throw an exception"
+                () -> queue.enqueue("Extra location"),
+                "Enqueueing into a full queue should throw IllegalStateException"
         );
     }
 
     /**
      * Tests that dequeueing from an empty queue throws
-     * NoSuchElementException, matching CircularQueue's implementation.
+     * NoSuchElementException.
      */
     @Test
     void testDequeueWhenEmpty() {
 
         assertThrows(
                 NoSuchElementException.class,
-                () -> cq.dequeue(),
-                "Dequeueing from an empty queue should throw an exception"
+                () -> queue.dequeue(),
+                "Dequeueing from an empty queue should throw NoSuchElementException"
         );
     }
 
     /**
-     * Tests front and rear index movement.
-     *
-     * This CircularQueue implementation uses -1 to represent
-     * an empty queue.
+     * Tests front/rear index movement and wrap-around.
      */
     @Test
-    void testFrontRearIndexes() {
+    void testFrontRearIndexes() throws Exception {
 
-        // Empty queue indexes.
-        assertEquals(0, cq.getFrontIndex());
-        assertEquals(-1, cq.getRearIndex());
+        List<String> locations = loadLocations(CAPACITY);
 
-        // First enqueue.
-        cq.enqueue(1);
-
-        // First element should occupy index 0.
-        assertEquals(0, cq.getFrontIndex());
-        assertEquals(0, cq.getRearIndex());
-
-        // Second enqueue.
-        cq.enqueue(2);
-
-        // Rear should move to index 1.
-        assertEquals(0, cq.getFrontIndex());
-        assertEquals(1, cq.getRearIndex());
-
-        // Dequeue 1.
-        // Front should move to index 1.
-        assertEquals(1, cq.dequeue());
-
-        assertEquals(1, cq.getFrontIndex());
-        assertEquals(1, cq.getRearIndex());
+        assertEquals(
+                CAPACITY,
+                locations.size(),
+                "Database should provide enough campus locations"
+        );
 
         /*
-         * Current state:
+         * Initial state.
          *
-         * Index:   0    1    2    3    4
-         *          -    2    -    -    -
+         * front = 0
+         * rear  = -1
+         */
+        assertEquals(0, queue.getFrontIndex());
+        assertEquals(-1, queue.getRearIndex());
+
+        // First enqueue.
+        queue.enqueue(locations.get(0));
+
+        assertEquals(0, queue.getFrontIndex());
+        assertEquals(0, queue.getRearIndex());
+
+        // Second enqueue.
+        queue.enqueue(locations.get(1));
+
+        assertEquals(0, queue.getFrontIndex());
+        assertEquals(1, queue.getRearIndex());
+
+        // Dequeue first location.
+        assertEquals(
+                locations.get(0),
+                queue.dequeue()
+        );
+
+        assertEquals(
+                1,
+                queue.getFrontIndex()
+        );
+
+        assertEquals(
+                1,
+                queue.getRearIndex()
+        );
+
+        /*
+         * Add remaining locations.
+         *
+         * rear:
+         * 1 -> 2 -> 3 -> 4 -> 0
+         */
+        queue.enqueue(locations.get(2));
+        assertEquals(2, queue.getRearIndex());
+
+        queue.enqueue(locations.get(3));
+        assertEquals(3, queue.getRearIndex());
+
+        queue.enqueue(locations.get(4));
+        assertEquals(4, queue.getRearIndex());
+
+        /*
+         * Queue currently contains four elements:
          *
          * front = 1
-         * rear  = 1
+         * rear  = 4
+         *
+         * Add one more element.
+         *
+         * rear wraps from 4 to 0.
          */
+        queue.enqueue(locations.get(0));
 
-        cq.enqueue(3);
-        assertEquals(2, cq.getRearIndex());
-
-        cq.enqueue(4);
-        assertEquals(3, cq.getRearIndex());
-
-        cq.enqueue(5);
-        assertEquals(4, cq.getRearIndex());
-
-        cq.enqueue(6);
-
-        // Rear should wrap from 4 to 0.
         assertEquals(
                 0,
-                cq.getRearIndex(),
-                "Rear should wrap around to 0"
+                queue.getRearIndex(),
+                "Rear should wrap from index 4 to index 0"
         );
 
-        assertTrue(
-                cq.isFull(),
-                "Queue should be full"
-        );
+        assertTrue(queue.isFull());
 
-        // Dequeue 2.
-        // Front moves from 1 to 2.
-        assertEquals(2, cq.dequeue());
+        // Remove one element.
+        assertEquals(
+                locations.get(1),
+                queue.dequeue()
+        );
 
         assertEquals(
                 2,
-                cq.getFrontIndex(),
-                "Front should move to 2 after dequeue"
+                queue.getFrontIndex(),
+                "Front should move from index 1 to index 2"
+        );
+    }
+
+    /**
+     * Tests peek using real PostgreSQL data.
+     */
+    @Test
+    void testPeek() throws Exception {
+
+        List<String> locations = loadLocations(2);
+
+        assertEquals(2, locations.size());
+
+        queue.enqueue(locations.get(0));
+        queue.enqueue(locations.get(1));
+
+        // Peek should return the first element.
+        assertEquals(
+                locations.get(0),
+                queue.peek()
+        );
+
+        // Peek must not remove the element.
+        assertEquals(2, queue.size());
+
+        // The first element should still be returned by dequeue.
+        assertEquals(
+                locations.get(0),
+                queue.dequeue()
         );
     }
 }
