@@ -1,12 +1,5 @@
 package com.ug.campusops.algorithms;
 
-import com.ug.campusops.db.DatabaseConnector;
-import com.ug.campusops.graph.Graph;
-import com.ug.campusops.model.Resource;
-import com.ug.campusops.model.ServiceRequest;
-import org.junit.jupiter.api.*;
-
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -15,7 +8,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.AfterAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.ug.campusops.db.DatabaseConnector;
+import com.ug.campusops.graph.Graph;
+import com.ug.campusops.graph.GraphDataLoader;
+import com.ug.campusops.model.Resource;
+import com.ug.campusops.model.ServiceRequest;
 
 /**
  * Tests for Greedy, run entirely against the REAL PostgreSQL database
@@ -32,12 +38,11 @@ import static org.junit.jupiter.api.Assertions.*;
  * If the DB isn't reachable, every test in this class is SKIPPED (not
  * failed) via Assumptions.
  *
- * NOTE on Graph: Feature 4's Graph.getWeight() is still a stub
- * (UnsupportedOperationException). Real route distances are pulled directly
- * from the `routes` table via the DbRouteGraph adapter below so this test
- * isn't blocked on Feature 4. Once Graph is implemented for real, swap
- * DbRouteGraph for `new Graph(...)` populated via addEdge() — nothing else
- * in this test (or in Greedy.nearestResourceAssignment) needs to change.
+ * NOTE on Graph: Feature 4's Graph.getWeight() is now implemented for real,
+ * so this test builds its graph via GraphDataLoader.loadCampusGraph(db),
+ * which reads the `locations` and `routes` tables and applies each route's
+ * traffic_factor to distance_m — the same graph the rest of the app uses.
+ * Routes are directed as stored in the DB (not auto-bidirectional).
  */
 class GreedyTest {
 
@@ -120,40 +125,7 @@ class GreedyTest {
         return out;
     }
 
-    /**
-     * Graph adapter backed directly by the real `routes` table, since
-     * Graph.getWeight() (Feature 4) is not implemented yet. Loads every
-     * route row into an in-memory lookup once, then answers getWeight()
-     * from that. Temporary — delete once Graph is finished.
-     */
-    private static class DbRouteGraph extends Graph {
-        private final Map<Long, Double> weights = new HashMap<>();
-
-        DbRouteGraph(Connection conn) throws SQLException {
-            super(1); // vertex count unused by our lookup
-            String sql = "SELECT from_location_id, to_location_id, distance_m FROM routes";
-            try (PreparedStatement ps = conn.prepareStatement(sql);
-                 ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    int from = rs.getInt("from_location_id");
-                    int to = rs.getInt("to_location_id");
-                    double dist = rs.getInt("distance_m");
-                    weights.put(key(from, to), dist);
-                    weights.put(key(to, from), dist); // treat routes as bidirectional
-                }
-            }
-        }
-
-        @Override
-        public double getWeight(int fromId, int toId) {
-            if (fromId == toId) return 0;
-            return weights.getOrDefault(key(fromId, toId), -1.0);
-        }
-
-        private long key(int fromId, int toId) {
-            return ((long) fromId << 32) | (toId & 0xffffffffL);
-        }
-    }
+       
 
     // ── Tests ────────────────────────────────────────────────────────
 
@@ -183,7 +155,7 @@ class GreedyTest {
         List<ServiceRequest> requests = loadPendingRequests(1);
         Assumptions.assumeTrue(!requests.isEmpty(), "No pending requests in DB to test with");
 
-        DbRouteGraph graph = new DbRouteGraph(db.getConnection());
+        Graph graph = GraphDataLoader.loadCampusGraph(db);
         ServiceRequest request = requests.get(0);
 
         List<Resource> candidates = loadResourcesByStatus("available", 20);
@@ -236,7 +208,7 @@ class GreedyTest {
         Assumptions.assumeTrue(!requests.isEmpty(), "No pending requests in DB to test with");
         Assumptions.assumeTrue(!resources.isEmpty(), "No available resources in DB to test with");
 
-        DbRouteGraph graph = new DbRouteGraph(db.getConnection());
+        Graph graph = GraphDataLoader.loadCampusGraph(db);
 
         ServiceRequest unreachable = null;
         for (ServiceRequest r : requests) {
@@ -280,7 +252,7 @@ class GreedyTest {
         Assumptions.assumeTrue(!requests.isEmpty(), "No pending requests in DB to test with");
         Assumptions.assumeTrue(!resources.isEmpty(), "No available resources in DB to test with");
 
-        DbRouteGraph graph = new DbRouteGraph(db.getConnection());
+        Graph graph = GraphDataLoader.loadCampusGraph(db);
 
         ServiceRequest[] reqArr = requests.toArray(new ServiceRequest[0]);
         Resource[] resArr = resources.toArray(new Resource[0]);
