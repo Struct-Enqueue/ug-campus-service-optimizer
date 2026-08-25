@@ -1,5 +1,12 @@
 package com.ug.campusops.graph;
 
+import com.ug.campusops.datastructures.MyQueue;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 /**
  * Breadth-First Search (BFS) on the campus graph.
  * Explores locations layer by layer — first all direct neighbors, then their neighbors, etc.
@@ -20,11 +27,28 @@ public class BFS {
      * @return array of location IDs in BFS visit order
      */
     public static int[] traverse(Graph graph, int startId) {
-        // TODO: Feature 5 team — implement this
-        //   Use a queue (MyQueue from Feature 2) and a visited set.
-        //   1. Enqueue startId, mark visited
-        //   2. While queue not empty: dequeue, record, enqueue unvisited neighbors
-        throw new UnsupportedOperationException("BFS.traverse() not yet implemented");
+        List<Integer> order = new ArrayList<>();
+        Set<Integer> visited = new HashSet<>();
+        MyQueue<Integer> queue = new MyQueue<>();
+
+        queue.enqueue(startId);
+        visited.add(startId);
+
+        while (!queue.isEmpty()) {
+            int current = queue.dequeue();
+            order.add(current);
+            for (int neighbor : graph.getNeighbors(current)) {
+                if (visited.add(neighbor)) {
+                    queue.enqueue(neighbor);
+                }
+            }
+        }
+
+        int[] result = new int[order.size()];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = order.get(i);
+        }
+        return result;
     }
 
     /**
@@ -35,7 +59,6 @@ public class BFS {
      * @return array of reachable location IDs
      */
     public static int[] findReachable(Graph graph, int startId) {
-        // TODO: Feature 5 team — implement this (same as traverse, but return the visited set)
-        throw new UnsupportedOperationException("BFS.findReachable() not yet implemented");
+        return traverse(graph, startId);
     }
 }
