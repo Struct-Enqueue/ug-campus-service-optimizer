@@ -65,8 +65,18 @@ public class HashTable<K, V> {
      * @param value the value
      */
     public void put(K key, V value) {
-        // TODO: Feature 3 team — implement this (hash key, handle collision by chaining)
-        throw new UnsupportedOperationException("HashTable.put() not yet implemented");
+        int index = hash(key);
+        Entry<K, V> current = table[index];
+        if (current != null) collisionCount++;
+        while (current != null) {
+            if (current.key.equals(key)) {
+                current.value = value;
+                return;
+            }
+            current = current.next;
+        }
+        table[index] = new Entry<>(key, value, table[index]);
+        size++;
     }
 
     /**
@@ -76,8 +86,15 @@ public class HashTable<K, V> {
      * @return the associated value, or null if not found
      */
     public V get(K key) {
-        // TODO: Feature 3 team — implement this
-        throw new UnsupportedOperationException("HashTable.get() not yet implemented");
+        int index = hash(key);
+        Entry<K, V> current = table[index];
+        while (current != null) {
+            if (current.key.equals(key)) {
+                return current.value;
+            }
+            current = current.next;
+        }
+        return null;
     }
 
     /**
@@ -87,8 +104,24 @@ public class HashTable<K, V> {
      * @return the removed value, or null if not found
      */
     public V remove(K key) {
-        // TODO: Feature 3 team — implement this
-        throw new UnsupportedOperationException("HashTable.remove() not yet implemented");
+        int index = hash(key);
+        Entry<K, V> current = table[index];
+        Entry<K, V> prev = null;
+        
+        while (current != null) {
+            if (current.key.equals(key)) {
+                if (prev == null) {
+                    table[index] = current.next;
+                } else {
+                    prev.next = current.next;
+                }
+                size--;
+                return current.value;
+            }
+            prev = current;
+            current = current.next;
+        }
+        return null;
     }
 
     /**
@@ -97,8 +130,37 @@ public class HashTable<K, V> {
      * @param key the key to check
      */
     public boolean containsKey(K key) {
-        // TODO: Feature 3 team — implement this
-        throw new UnsupportedOperationException("HashTable.containsKey() not yet implemented");
+        return get(key) != null;
+    }
+
+    /**
+     * Returns a DynamicArray of all keys in the hash table.
+     */
+    public DynamicArray<K> keys() {
+        DynamicArray<K> keysList = new DynamicArray<>(size);
+        for (int i = 0; i < table.length; i++) {
+            Entry<K, V> current = table[i];
+            while (current != null) {
+                keysList.add(current.key);
+                current = current.next;
+            }
+        }
+        return keysList;
+    }
+
+    /**
+     * Returns a DynamicArray of all values in the hash table.
+     */
+    public DynamicArray<V> values() {
+        DynamicArray<V> valuesList = new DynamicArray<>(size);
+        for (int i = 0; i < table.length; i++) {
+            Entry<K, V> current = table[i];
+            while (current != null) {
+                valuesList.add(current.value);
+                current = current.next;
+            }
+        }
+        return valuesList;
     }
 
     /** Returns the number of key-value pairs stored. */

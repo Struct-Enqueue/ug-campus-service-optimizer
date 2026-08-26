@@ -2,7 +2,11 @@ package com.ug.campusops;
 
 import com.ug.campusops.db.DatabaseConnector;
 import com.ug.campusops.db.SchemaSetup;
+import com.ug.campusops.graph.Graph;
+import com.ug.campusops.graph.GraphDataLoader;
 import com.ug.campusops.ui.ConsoleMenu;
+
+
 
 /**
  * Entry point for the Campus Smart Service Operations Optimizer.
@@ -76,6 +80,12 @@ public class Main {
 
             System.out.println("==============================================");
 
+            Graph campusGraph = GraphDataLoader.loadCampusGraph(db);
+            System.out.println("[INFO] Graph loaded with " + campusGraph.getVertexCount() + " vertices and " + campusGraph.getEdgeCount() + " edges.");
+
+            ConsoleMenu menu = new ConsoleMenu(campusGraph);
+            menu.start();
+
         } catch (java.sql.SQLException e) {
             System.err.println("[ERROR] Database error: " + e.getMessage());
             e.printStackTrace();
@@ -87,12 +97,11 @@ public class Main {
         // Step 3: Build graph from database
         // Graph campusGraph = new Graph(60);
         // // load locations and routes from DB, add to graph
-        //
-        // Step 4: Build priority queue from pending requests
+        
+        
+        // //Step 4: Build priority queue from pending requests
         // // load pending requests from DB, add to priority queue
         //
         // Step 5: Launch console menu
-        // ConsoleMenu menu = new ConsoleMenu();
-        // menu.start();
     }
 }
