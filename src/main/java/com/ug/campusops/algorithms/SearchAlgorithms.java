@@ -6,9 +6,10 @@ package com.ug.campusops.algorithms;
  * Feature 6 — Search & Sort Engine
  *
  * Required evidence:
- *   - Binary search precondition stated and tested (array must be sorted)
- *   - Counterexample: binary search on unsorted input
- *   - Performance comparison: linear vs binary search at 100, 500, 1000, 5000, 10000 records
+ * - Binary search precondition stated and tested (array must be sorted)
+ * - Counterexample: binary search on unsorted input
+ * - Performance comparison: linear vs binary search at 100, 500, 1000, 5000,
+ * 10000 records
  */
 public class SearchAlgorithms {
 
@@ -22,8 +23,12 @@ public class SearchAlgorithms {
      * @return the index of the target, or -1 if not found
      */
     public static <T extends Comparable<T>> int linearSearch(T[] array, T target) {
-        // TODO: Feature 6 team — implement this
-        throw new UnsupportedOperationException("SearchAlgorithms.linearSearch() not yet implemented");
+        requireInput(array, target);
+        for (int index = 0; index < array.length; index++) {
+            if (array[index].compareTo(target) == 0)
+                return index;
+        }
+        return -1;
     }
 
     /**
@@ -36,7 +41,25 @@ public class SearchAlgorithms {
      * @return the index of the target, or -1 if not found
      */
     public static <T extends Comparable<T>> int binarySearch(T[] sortedArray, T target) {
-        // TODO: Feature 6 team — implement this
-        throw new UnsupportedOperationException("SearchAlgorithms.binarySearch() not yet implemented");
+        requireInput(sortedArray, target);
+        int low = 0;
+        int high = sortedArray.length - 1;
+        while (low <= high) {
+            int middle = low + (high - low) / 2;
+            int comparison = sortedArray[middle].compareTo(target);
+            if (comparison == 0)
+                return middle;
+            if (comparison < 0)
+                low = middle + 1;
+            else
+                high = middle - 1;
+        }
+        return -1;
+    }
+
+    private static <T> void requireInput(T[] array, T target) {
+        if (array == null || target == null) {
+            throw new IllegalArgumentException("array and target must not be null");
+        }
     }
 }
