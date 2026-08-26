@@ -4,10 +4,17 @@ import java.util.Scanner;
 import com.ug.campusops.model.ServiceRequest;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.ug.campusops.graph.Graph;
 import com.ug.campusops.model.Location;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Collections;
+import com.ug.campusops.graph.Dijkstra;
+import com.ug.campusops.graph.BFS;
+import com.ug.campusops.graph.DFS;
+import com.ug.campusops.graph.Prim;
+import com.ug.campusops.graph.Kruskal;
 
 /**
  * Console-based menu system for the Campus Smart Service Operations Optimizer.
@@ -34,16 +41,15 @@ public class ConsoleMenu {
     private Scanner scanner;
     private List<ServiceRequest> pendingRequests;
     private List<Location> locations;
-    private Map<Integer, List<RouteEdge>> adjacencyList;
-    private Map<Integer, String> locationNames;
+    private Graph campusGraph;
 
     /** Creates the console menu. */
-    public ConsoleMenu() {
+    public ConsoleMenu(Graph campusGraph) {
     this.scanner = new Scanner(System.in);
     this.pendingRequests = new ArrayList<>();
     this.locations = new ArrayList<>();
+    this.campusGraph = campusGraph;
     loadLocations();
-    loadRoutes();
 }
 
     /**
@@ -51,107 +57,190 @@ public class ConsoleMenu {
      * This is the entry point — called from Main.java.
      */
 
-    private static class RouteEdge {
-    int toId;
-    int distance;
-    double trafficFactor;
 
-    RouteEdge(int toId, int distance, double trafficFactor) {
-        this.toId = toId;
-        this.distance = distance;
-        this.trafficFactor = trafficFactor;
-    }
+    // double getWeight() {
+    //     return distance * trafficFactor;
+    // }
 
-    double getWeight() {
-        return distance * trafficFactor;
+    private boolean locationExists(int id) {
+    for (Location loc : locations) {
+        if (loc.getLocationId() == id) {
+            return true;
+        }
     }
+    return false;
 }
+
+private String getLocationName(int id) {
+    for (Location loc : locations) {
+        if (loc.getLocationId() == id) {
+            return loc.getName();
+        }
+    }
+    return null;
+}
+
     private void findFastestRoute() {
     System.out.println("\n Find Fastest Route Between Locations");
     System.out.println("------------------------------------");
-    
-    if (adjacencyList == null || adjacencyList.isEmpty()) {
-        System.out.println(" Route data not loaded. Please ensure routes.csv exists.");
+
+    if (campusGraph == null || campusGraph.getVertexCount() == 0) {
+        System.out.println(" Graph not loaded. Please check database connection.");
         return;
     }
-    
+
     System.out.print("Enter start location ID: ");
     int startId = scanner.nextInt();
     scanner.nextLine();
-    
+
     System.out.print("Enter destination location ID: ");
     int destId = scanner.nextInt();
     scanner.nextLine();
-    
-    if (!locationNames.containsKey(startId)) {
+
+    // Check if locations exist in our loaded locations list
+    if (!locationExists(startId)) {
         System.out.println(" Invalid start location ID.");
         return;
     }
-    if (!locationNames.containsKey(destId)) {
+    if (!locationExists(destId)) {
         System.out.println(" Invalid destination location ID.");
         return;
     }
-    
-    // Run Dijkstra
-    Map<Integer, Double> distances = new HashMap<>();
-    Map<Integer, Integer> predecessors = new HashMap<>();
-    java.util.PriorityQueue<int[]> pq = new java.util.PriorityQueue<>((a, b) -> Double.compare(a[1], b[1]));
-    
-    for (int id : locationNames.keySet()) {
-        distances.put(id, Double.MAX_VALUE);
-    }
-    distances.put(startId, 0.0);
-    pq.offer(new int[]{startId, 0});
-    
-    while (!pq.isEmpty()) {
-        int[] current = pq.poll();
-        int currentId = current[0];
-        double currentDist = current[1];
-        
-        if (currentDist > distances.get(currentId)) continue;
-        if (currentId == destId) break;
-        
-        List<RouteEdge> edges = adjacencyList.get(currentId);
-        if (edges == null) continue;
-        
-        for (RouteEdge edge : edges) {
-            double newDist = currentDist + edge.getWeight();
-            if (newDist < distances.get(edge.toId)) {
-                distances.put(edge.toId, newDist);
-                predecessors.put(edge.toId, currentId);
-                pq.offer(new int[]{edge.toId, (int) newDist});
-            }
-        }
-    }
-    
-    // Display result
-    if (distances.get(destId) == Double.MAX_VALUE) {
+
+    Dijkstra.ShortestPathResult result = Dijkstra.shortestPath(campusGraph, startId, destId);
+
+    // Check if a path was found
+    if (result.distances[destId] == Double.POSITIVE_INFINITY) {
         System.out.println(" No route found between " + startId + " and " + destId);
         return;
     }
-    
-    // Reconstruct path
+
+    // Reconstruct the path from predecessors
     List<Integer> path = new ArrayList<>();
     int current = destId;
     while (current != startId) {
         path.add(current);
-        current = predecessors.getOrDefault(current, -1);
-        if (current == -1) break;
+        current = result.predecessors[current];
+        if (current == -1) {
+            break;
+        }
     }
     path.add(startId);
     Collections.reverse(path);
-    
+
+    // Display the results
     System.out.println("\n Shortest route found!");
-    System.out.println("   Total distance: " + Math.round(distances.get(destId)) + " meters");
+    System.out.printf("   Total distance: %.0f meters%n", result.distances[destId]);
+
     System.out.println("   Path: ");
     for (int i = 0; i < path.size(); i++) {
         int id = path.get(i);
-        System.out.print("   " + (i+1) + ". " + locationNames.get(id));
-        if (i < path.size() - 1) System.out.println(" →");
+        String name = getLocationName(id);
+        System.out.print("   " + (i + 1) + ". " + (name != null ? name : "Unknown (" + id + ")"));
+        if (i < path.size() - 1) {
+            System.out.println(" →");
+        }
     }
     System.out.println();
 }
 
+private void checkReachableLocations() {
+    System.out.println("\n    Check Reachable Locations (BFS/DFS)");
+    System.out.println("------------------------------------");
+
+    if (campusGraph == null || campusGraph.getVertexCount() == 0) {
+        System.out.println("    Graph not loaded. Please check database connection.");
+        return;
+    }
+
+    System.out.print("Enter start location ID: ");
+    int startId = scanner.nextInt();
+    scanner.nextLine();
+
+    if (!locationExists(startId)) {
+        System.out.println("    Invalid location ID.");
+        return;
+    }
+
+    System.out.println("Choose algorithm:");
+    System.out.println("1. BFS (Breadth-First Search)");
+    System.out.println("2. DFS (Depth-First Search)");
+    System.out.print("Enter choice (1 or 2): ");
+    int choice = scanner.nextInt();
+    scanner.nextLine();
+
+    int[] result;
+    String algorithmName;
+    if (choice == 1) {
+        result = BFS.traverse(campusGraph, startId);
+        algorithmName = "BFS";
+    } else if (choice == 2) {
+        result = DFS.traverse(campusGraph, startId);
+        algorithmName = "DFS";
+    } else {
+        System.out.println(" Invalid choice.");
+        return;
+    }
+
+    System.out.println("\n    " + algorithmName + " traversal from location " + startId + ":");
+    System.out.println("Found " + result.length + " reachable location(s):");
+    System.out.println("ID | Name");
+    System.out.println("----------------");
+    for (int id : result) {
+        String name = getLocationName(id);
+        System.out.printf("%-2d | %s%n", id, name != null ? name : "Unknown");
+    }
+}
+
+private void viewMinimumSpanningTree() {
+    System.out.println("\n    Minimum Spanning Tree (MST)");
+    System.out.println("------------------------------------");
+
+    if (campusGraph == null || campusGraph.getVertexCount() == 0) {
+        System.out.println("    Graph not loaded. Please check database connection.");
+        return;
+    }
+
+    System.out.println("Choose algorithm:");
+    System.out.println("1. Prim's Algorithm");
+    System.out.println("2. Kruskal's Algorithm");
+    System.out.print("Enter choice (1 or 2): ");
+    int choice = scanner.nextInt();
+    scanner.nextLine();
+
+    Prim.MSTResult result;
+    String algorithmName;
+    if (choice == 1) {
+        result = Prim.minimumSpanningTree(campusGraph);
+        algorithmName = "Prim";
+    } else if (choice == 2) {
+        result = Kruskal.minimumSpanningTree(campusGraph);
+        algorithmName = "Kruskal";
+    } else {
+        System.out.println("    Invalid choice.");
+        return;
+    }
+
+    System.out.println("\n🌲 MST using " + algorithmName + "'s algorithm:");
+    System.out.println("   Total edges: " + result.edgeCount);
+    System.out.printf("   Total cost: %.2f%n", result.totalCost);
+
+    System.out.println("\n   Edges in the MST:");
+    System.out.println("   From | To   | Weight");
+    System.out.println("   ----------------------");
+    for (int i = 0; i < result.edgeCount; i++) {
+        int fromId = result.edges[i][0];
+        int toId = result.edges[i][1];
+        String fromName = getLocationName(fromId);
+        String toName = getLocationName(toId);
+        System.out.printf("   %-4s | %-4s | %.2f%n",
+            fromName != null ? fromName : String.valueOf(fromId),
+            toName != null ? toName : String.valueOf(toId),
+            result.weights[i]
+        );
+    }
+}
+   
     public void start() {
         int choice;
 
@@ -184,13 +273,11 @@ public class ConsoleMenu {
                     break;
 
                 case 5:
-                    System.out.println("[Option 5] Check reachable locations (BFS/DFS) - Coming soon!");
-                    // TODO: Later, call BFS.traverse() or DFS.traverse()
+                    checkReachableLocations();
                     break;
 
                 case 6:
-                    System.out.println("[Option 6] View minimum spanning tree (Prim/Kruskal) - Coming soon!");
-                    // TODO: Later, call Prim.minimumSpanningTree() or Kruskal...
+                    viewMinimumSpanningTree();
                     break;
 
                 case 7:
@@ -488,42 +575,6 @@ private void loadLocations() {
         System.out.println("[INFO] Loaded " + locations.size() + " locations from CSV.");
     } catch (Exception e) {
         System.out.println("[WARNING] Could not load locations: " + e.getMessage());
-    }
-}
-
-private void loadRoutes() {
-    adjacencyList = new HashMap<>();
-    locationNames = new HashMap<>();
-    String filePath = "data/routes.csv";
-    
-    try (java.io.BufferedReader br = new java.io.BufferedReader(new java.io.FileReader(filePath))) {
-        String line = br.readLine(); // skip header
-        while ((line = br.readLine()) != null) {
-            String[] parts = line.split(",");
-            if (parts.length >= 6) {
-                int fromId = Integer.parseInt(parts[1]);
-                int toId = Integer.parseInt(parts[2]);
-                int distance = Integer.parseInt(parts[3]);
-                int avgTime = Integer.parseInt(parts[4]);
-                double trafficFactor = Double.parseDouble(parts[5]);
-                
-                // Add edge from -> to
-                adjacencyList.putIfAbsent(fromId, new ArrayList<>());
-                adjacencyList.get(fromId).add(new RouteEdge(toId, distance, trafficFactor));
-                
-                // Add reverse edge (bidirectional)
-                adjacencyList.putIfAbsent(toId, new ArrayList<>());
-                adjacencyList.get(toId).add(new RouteEdge(fromId, distance, trafficFactor));
-            }
-        }
-        System.out.println("[INFO] Loaded routes from CSV.");
-    } catch (Exception e) {
-        System.out.println("[WARNING] Could not load routes: " + e.getMessage());
-    }
-    
-    // Build location name map from the locations list
-    for (Location loc : locations) {
-        locationNames.put(loc.getLocationId(), loc.getName());
     }
 }
 

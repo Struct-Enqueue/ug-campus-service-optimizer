@@ -1,4 +1,4 @@
-routeId,fromLocationId,toLocationId,distanceM,avgTimeMin,trafficFactor
+﻿routeId,fromLocationId,toLocationId,distanceM,avgTimeMin,trafficFactor
 1,1,20,200,3,1.0
 2,20,1,200,3,1.0
 3,1,19,350,5,1.0
@@ -109,3 +109,13 @@ routeId,fromLocationId,toLocationId,distanceM,avgTimeMin,trafficFactor
 108,52,51,200,3,1.0
 109,53,52,50,1,1.0
 110,52,53,50,1,1.0
+111,54,55,50,1,1.0
+112,55,54,50,1,1.0
+113,34,57,50,1,1.0
+114,57,34,50,1,1.0
+115,33,56,150,2,1.0
+116,56,33,150,2,1.0
+117,33,59,100,2,1.0
+118,59,33,100,2,1.0
+119,33,60,250,4,1.0
+120,60,33,250,4,1.0

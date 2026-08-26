@@ -1,5 +1,4 @@
 package com.ug.campusops.datastructures;
-
 import java.util.NoSuchElementException;
 
 /**
@@ -46,7 +45,12 @@ public class CircularQueue<T> {
      */
     public void enqueue(T element) {
         // TODO: Feature 2 team — implement this (remember to wrap rear)
-        throw new UnsupportedOperationException("CircularQueue.enqueue() not yet implemented");
+        if (isFull()) {
+            throw new IllegalStateException("Queue is full");
+        }
+        rear = (rear + 1) % capacity;
+        data[rear] = element;
+        size++;
     }
 
     /**
@@ -57,7 +61,14 @@ public class CircularQueue<T> {
      */
     public T dequeue() {
         // TODO: Feature 2 team — implement this (remember to wrap front)
-        throw new UnsupportedOperationException("CircularQueue.dequeue() not yet implemented");
+        if (isEmpty()) {
+            throw new NoSuchElementException("Queue is empty");
+        }
+        @SuppressWarnings("unchecked")
+        T element = (T) data[front];
+        front = (front + 1) % capacity;
+        size--;
+        return element;
     }
 
     /**
@@ -68,7 +79,12 @@ public class CircularQueue<T> {
      */
     public T peek() {
         // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("CircularQueue.peek() not yet implemented");
+        if (isEmpty()) {
+            throw new NoSuchElementException("Queue is empty");
+        }
+        @SuppressWarnings("unchecked")
+        T element = (T) data[front];
+        return element;
     }
 
     /** Returns true if the queue contains no elements. */

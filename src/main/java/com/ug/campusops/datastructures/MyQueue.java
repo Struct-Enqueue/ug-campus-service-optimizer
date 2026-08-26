@@ -15,11 +15,28 @@ import java.util.NoSuchElementException;
  */
 public class MyQueue<T> {
 
-    // TODO: Feature 2 team — choose internal storage (array or linked list)
+    /**
+     * Internal node class.
+     */
+    private static class Node<T> {
+        T data;
+        Node<T> next;
+
+        Node(T data) {
+            this.data = data;
+            this.next = null;
+        }
+    }
+
+    private Node<T> front;
+    private Node<T> rear;
+    private int size;
 
     /** Creates an empty queue. */
     public MyQueue() {
-        // TODO: Feature 2 team — implement this
+        front = null;
+        rear = null;
+        size = 0;
     }
 
     /**
@@ -28,8 +45,17 @@ public class MyQueue<T> {
      * @param element the element to enqueue
      */
     public void enqueue(T element) {
-        // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyQueue.enqueue() not yet implemented");
+        Node<T> newNode = new Node<>(element);
+
+        if (isEmpty()) {
+            front = newNode;
+            rear = newNode;
+        } else {
+            rear.next = newNode;
+            rear = newNode;
+        }
+
+        size++;
     }
 
     /**
@@ -39,8 +65,22 @@ public class MyQueue<T> {
      * @throws NoSuchElementException if the queue is empty
      */
     public T dequeue() {
-        // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyQueue.dequeue() not yet implemented");
+        if (isEmpty()) {
+            throw new NoSuchElementException("Queue is empty");
+        }
+
+        T element = front.data;
+
+        front = front.next;
+        size--;
+
+        // If the queue becomes empty,
+        // rear must also become null.
+        if (size == 0) {
+            rear = null;
+        }
+
+        return element;
     }
 
     /**
@@ -50,23 +90,24 @@ public class MyQueue<T> {
      * @throws NoSuchElementException if the queue is empty
      */
     public T peek() {
-        // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyQueue.peek() not yet implemented");
+        if (isEmpty()) {
+            throw new NoSuchElementException("Queue is empty");
+        }
+
+        return front.data;
     }
 
     /**
      * Returns true if the queue contains no elements.
      */
     public boolean isEmpty() {
-        // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyQueue.isEmpty() not yet implemented");
+        return size == 0;
     }
 
     /**
      * Returns the number of elements in the queue.
      */
     public int size() {
-        // TODO: Feature 2 team — implement this
-        throw new UnsupportedOperationException("MyQueue.size() not yet implemented");
+        return size;
     }
 }

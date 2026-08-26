@@ -1,5 +1,10 @@
 package com.ug.campusops.graph;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Graph representation of the UG Legon campus network.
  * Stores locations as vertices and routes as weighted edges using BOTH:
@@ -15,12 +20,11 @@ package com.ug.campusops.graph;
  */
 public class Graph {
 
-    // TODO: Feature 4 team — choose internal storage:
-    //   - adjacencyList: array/map of linked lists (locationId → list of {neighborId, weight})
-    //   - adjacencyMatrix: 2D array where matrix[i][j] = weight (0 or -1 if no edge)
-
+    private final Map<Integer, List<Integer>> adjacencyList;
+    private double[][] adjacencyMatrix;
     private int vertexCount;
     private int edgeCount;
+    private int maxVertices;
 
     /**
      * Creates an empty graph that can hold up to maxVertices vertices.
@@ -28,9 +32,16 @@ public class Graph {
      * @param maxVertices maximum number of locations the graph can hold
      */
     public Graph(int maxVertices) {
+        this.maxVertices = Math.max(1, maxVertices);
+        this.adjacencyList = new LinkedHashMap<>();
+        this.adjacencyMatrix = new double[this.maxVertices][this.maxVertices];
+        for (int i = 0; i < this.maxVertices; i++) {
+            for (int j = 0; j < this.maxVertices; j++) {
+                this.adjacencyMatrix[i][j] = -1.0;
+            }
+        }
         this.vertexCount = 0;
         this.edgeCount = 0;
-        // TODO: Feature 4 team — initialize adjacency list and adjacency matrix
     }
 
     /**
@@ -39,8 +50,14 @@ public class Graph {
      * @param locationId the unique ID of the location
      */
     public void addVertex(int locationId) {
-        // TODO: Feature 4 team — implement this
-        throw new UnsupportedOperationException("Graph.addVertex() not yet implemented");
+        if (locationId < 0) {
+            throw new IllegalArgumentException("Location ID cannot be negative");
+        }
+        ensureCapacity(locationId + 1);
+        if (!adjacencyList.containsKey(locationId)) {
+            adjacencyList.put(locationId, new ArrayList<>());
+            vertexCount++;
+        }
     }
 
     /**
@@ -52,8 +69,19 @@ public class Graph {
      * @param weight the edge weight (e.g. distance in meters or travel time)
      */
     public void addEdge(int fromId, int toId, double weight) {
-        // TODO: Feature 4 team — implement this (update BOTH adjacency list AND matrix)
-        throw new UnsupportedOperationException("Graph.addEdge() not yet implemented");
+        if (fromId < 0 || toId < 0) {
+            throw new IllegalArgumentException("Location IDs cannot be negative");
+        }
+        addVertex(fromId);
+        addVertex(toId);
+        ensureCapacity(Math.max(fromId, toId) + 1);
+
+        if (!hasEdge(fromId, toId)) {
+            adjacencyList.get(fromId).add(toId);
+            edgeCount++;
+        }
+
+        adjacencyMatrix[fromId][toId] = weight;
     }
 
     /**
@@ -64,8 +92,15 @@ public class Graph {
      * @return array of neighbor location IDs (or empty array if none)
      */
     public int[] getNeighbors(int locationId) {
-        // TODO: Feature 4 team — implement this (read from adjacency list)
-        throw new UnsupportedOperationException("Graph.getNeighbors() not yet implemented");
+        if (!adjacencyList.containsKey(locationId)) {
+            return new int[0];
+        }
+        List<Integer> neighbors = adjacencyList.get(locationId);
+        int[] result = new int[neighbors.size()];
+        for (int i = 0; i < neighbors.size(); i++) {
+            result[i] = neighbors.get(i);
+        }
+        return result;
     }
 
     /**
@@ -76,8 +111,13 @@ public class Graph {
      * @return the edge weight, or -1 if no edge exists
      */
     public double getWeight(int fromId, int toId) {
-        // TODO: Feature 4 team — implement this (read from adjacency matrix for O(1))
-        throw new UnsupportedOperationException("Graph.getWeight() not yet implemented");
+        if (fromId < 0 || toId < 0 || fromId >= adjacencyMatrix.length || toId >= adjacencyMatrix.length) {
+            return -1.0;
+        }
+        if (fromId == toId) {
+            return 0.0;
+        }
+        return adjacencyMatrix[fromId][toId];
     }
 
     /**
@@ -87,8 +127,7 @@ public class Graph {
      * @param toId   destination location ID
      */
     public boolean hasEdge(int fromId, int toId) {
-        // TODO: Feature 4 team — implement this
-        throw new UnsupportedOperationException("Graph.hasEdge() not yet implemented");
+        return getWeight(fromId, toId) != -1.0;
     }
 
     /** Returns the number of vertices (locations) in the graph. */
@@ -96,4 +135,35 @@ public class Graph {
 
     /** Returns the number of edges (routes) in the graph. */
     public int getEdgeCount() { return edgeCount; }
+
+    /** Returns the IDs of every vertex currently in the graph. */
+    public int[] getVertexIds() {
+        int[] result = new int[adjacencyList.size()];
+        int i = 0;
+        for (int id : adjacencyList.keySet()) {
+            result[i++] = id;
+        }
+        return result;
+    }
+
+    private void ensureCapacity(int minimumSize) {
+        if (minimumSize <= maxVertices) {
+            return;
+        }
+
+        int newSize = Math.max(this.maxVertices * 2, minimumSize);
+        double[][] newMatrix = new double[newSize][newSize];
+        for (int i = 0; i < newSize; i++) {
+            for (int j = 0; j < newSize; j++) {
+                newMatrix[i][j] = -1.0;
+            }
+        }
+
+        for (int i = 0; i < maxVertices; i++) {
+            System.arraycopy(adjacencyMatrix[i], 0, newMatrix[i], 0, maxVertices);
+        }
+
+        this.adjacencyMatrix = newMatrix;
+        this.maxVertices = newSize;
+    }
 }

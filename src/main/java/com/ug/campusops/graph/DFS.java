@@ -1,5 +1,10 @@
 package com.ug.campusops.graph;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 /**
  * Depth-First Search (DFS) on the campus graph.
  * Explores as deep as possible down one path before backtracking.
@@ -20,12 +25,25 @@ public class DFS {
      * @return array of location IDs in DFS visit order
      */
     public static int[] traverse(Graph graph, int startId) {
-        // TODO: Feature 5 team — implement this
-        //   Use a stack (MyStack from Feature 2) and a visited set.
-        //   OR use recursion (which implicitly uses the call stack).
-        //   1. Push startId, mark visited
-        //   2. While stack not empty: pop, record, push unvisited neighbors
-        throw new UnsupportedOperationException("DFS.traverse() not yet implemented");
+        List<Integer> order = new ArrayList<>();
+        Set<Integer> visited = new HashSet<>();
+        visit(graph, startId, visited, order);
+
+        int[] result = new int[order.size()];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = order.get(i);
+        }
+        return result;
+    }
+
+    private static void visit(Graph graph, int id, Set<Integer> visited, List<Integer> order) {
+        visited.add(id);
+        order.add(id);
+        for (int neighbor : graph.getNeighbors(id)) {
+            if (!visited.contains(neighbor)) {
+                visit(graph, neighbor, visited, order);
+            }
+        }
     }
 
     /**
@@ -36,7 +54,6 @@ public class DFS {
      * @return array of reachable location IDs
      */
     public static int[] findReachable(Graph graph, int startId) {
-        // TODO: Feature 5 team — implement this
-        throw new UnsupportedOperationException("DFS.findReachable() not yet implemented");
+        return traverse(graph, startId);
     }
 }
