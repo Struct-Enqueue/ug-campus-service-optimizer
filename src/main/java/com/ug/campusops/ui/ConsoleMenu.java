@@ -9,14 +9,17 @@ import java.util.List;
 
 import com.ug.campusops.graph.Graph;
 import com.ug.campusops.model.Location;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Collections;
 import com.ug.campusops.graph.Dijkstra;
 import com.ug.campusops.graph.BFS;
 import com.ug.campusops.graph.DFS;
 import com.ug.campusops.graph.Prim;
 import com.ug.campusops.graph.Kruskal;
+import com.ug.campusops.algorithms.Greedy;
+import com.ug.campusops.algorithms.DynamicProgramming;
+import com.ug.campusops.model.Resource;
+import com.ug.campusops.algorithms.SearchAlgorithms;
+import com.ug.campusops.algorithms.SortAlgorithms;
 
 /**
  * Console-based menu system for the Campus Smart Service Operations Optimizer.
@@ -58,15 +61,7 @@ public class ConsoleMenu {
         loadLocations();
     }
 
-    /**
-     * Displays the main menu and processes user choices in a loop.
-     * This is the entry point — called from Main.java.
-     */
-
-
-    // double getWeight() {
-    //     return distance * trafficFactor;
-    // }
+    
 
     private boolean locationExists(int id) {
     for (Location loc : locations) {
@@ -246,7 +241,10 @@ private void viewMinimumSpanningTree() {
         );
     }
 }
-   
+   /**
+     * Displays the main menu and processes user choices in a loop.
+     * This is the entry point — called from Main.java.
+     */
     public void start() {
         int choice;
 
@@ -295,13 +293,11 @@ private void viewMinimumSpanningTree() {
                     break;
 
                 case 9:
-                    System.out.println("[Option 9] Run optimisation (Greedy / DP) - Coming soon!");
-                    // TODO: Later, call Greedy.nearestResourceAssignment() or DP...
+                    runOptimisation();
                     break;
 
                 case 10:
-                    System.out.println("[Option 10] Run performance experiments - Coming soon!");
-                    // TODO: Later, run the timing tests
+                   runPerformanceExperiments();
                     break;
 
                 case 11:
@@ -576,6 +572,263 @@ private void loadLocations() {
         System.out.println("[INFO] Loaded " + locations.size() + " locations from CSV.");
     } catch (Exception e) {
         System.out.println("[WARNING] Could not load locations: " + e.getMessage());
+    }
+}
+
+private Resource[] loadResources() {
+    List<Resource> resourceList = new ArrayList<>();
+    try {
+        java.sql.ResultSet rs = db.executeQuery(
+            "SELECT resource_id, type, home_location_id, capacity, availability_status FROM resources"
+        );
+        while (rs.next()) {
+            Resource res = new Resource(
+                rs.getInt("resource_id"),
+                rs.getString("type"),
+                rs.getInt("home_location_id"),
+                rs.getInt("capacity"),
+                rs.getString("availability_status")
+            );
+            resourceList.add(res);
+        }
+        rs.close();
+        System.out.println("[INFO] Loaded " + resourceList.size() + " resources from DB.");
+    } catch (Exception e) {
+        System.out.println("[WARNING] Could not load resources: " + e.getMessage());
+    }
+    return resourceList.toArray(new Resource[0]);
+}
+
+private void runGreedy() {
+    System.out.println("\n    Greedy Algorithm: Nearest-Resource Assignment");
+    System.out.println("------------------------------------");
+
+    // Load resources from DB
+    Resource[] resources = loadResources();
+    if (resources.length == 0) {
+        System.out.println("    No resources available in the database.");
+        return;
+    }
+
+    // Convert pendingRequests list to array
+    ServiceRequest[] requestsArray = pendingRequests.toArray(new ServiceRequest[0]);
+
+    // Run greedy assignment
+    int[] assignments = Greedy.nearestResourceAssignment(requestsArray, resources, campusGraph);
+
+    // Display results
+    System.out.println("\n    Assignment Results:");
+    System.out.println("Request ID | Assigned Resource ID | Status");
+    System.out.println("------------------------------------------");
+    for (int i = 0; i < assignments.length; i++) {
+        System.out.printf("%-10d | %-20d | %s%n",
+            requestsArray[i].getRequestId(),
+            assignments[i],
+            assignments[i] != -1 ? "    Assigned" : "    No resource");
+    }
+
+    // Show greedy counterexample for demonstration
+    System.out.println("\n    Greedy Counterexample (from documentation):");
+    System.out.println(Greedy.greedyCounterExample());
+}
+
+private void runDP() {
+    System.out.println("\n   Dynamic Programming: 0/1 Knapsack");
+    System.out.println("------------------------------------");
+
+    if (pendingRequests.isEmpty()) {
+        System.out.println("    No pending requests to optimise.");
+        return;
+    }
+
+    // Ask for budget (total time available in minutes)
+    System.out.print("Enter total available time budget (in minutes): ");
+    int budget = scanner.nextInt();
+    scanner.nextLine();
+
+    // Convert pendingRequests list to array
+    ServiceRequest[] requestsArray = pendingRequests.toArray(new ServiceRequest[0]);
+
+    // Run DP
+    DynamicProgramming.KnapsackResult result = DynamicProgramming.requestKnapsack(requestsArray, budget);
+
+    // Display DP table (optional, but good for evidence)
+    System.out.println("\n    DP Tabulation Table (rows = items, columns = budget):");
+    System.out.println(result.dpTableAsString());
+
+    // Display results
+    System.out.println("    Maximum total urgency achieved: " + result.maxValue);
+    System.out.println("    Selected requests (indices): " + result.selectedIndicesAsString());
+
+    // Show which requests were selected (with details)
+    System.out.println("\n    Selected Requests Details:");
+    System.out.println("Index | ID | Category   | Urgency | Estimated Time");
+    System.out.println("------------------------------------------------");
+    for (int i = 0; i < requestsArray.length; i++) {
+        if (result.selectedItems[i]) {
+            ServiceRequest req = requestsArray[i];
+            System.out.printf("%-5d | %-2d | %-10s | %-7d | %d min%n",
+                i, req.getRequestId(), req.getCategory(),
+                req.getUrgencyLevel(), req.getEstimatedTime());
+        }
+    }
+}
+
+private void runOptimisation() {
+    System.out.println("\n    Run Optimisation (Greedy / DP)");
+    System.out.println("------------------------------------");
+
+    if (pendingRequests.isEmpty()) {
+        System.out.println("    No pending requests to optimise. Please submit some requests first.");
+        return;
+    }
+
+    System.out.println("Choose algorithm:");
+    System.out.println("1. Greedy (Nearest-Resource Assignment)");
+    System.out.println("2. Dynamic Programming (0/1 Knapsack)");
+    System.out.print("Enter choice (1 or 2): ");
+    int choice = scanner.nextInt();
+    scanner.nextLine();
+
+    switch (choice) {
+        case 1:
+            runGreedy();
+            break;
+        case 2:
+            runDP();
+            break;
+        default:
+            System.out.println("    Invalid choice.");
+    }
+}
+
+private void runSearchExperiment() {
+    System.out.println("\n    Search Algorithm Performance");
+    System.out.println("------------------------------------");
+
+    int[] sizes = {100, 500, 1000, 5000, 10000};
+    int target = 9999; // target value to search for
+
+    System.out.printf("%-10s | %-15s | %-15s | %-15s%n", "Size", "Linear (ns)", "Binary (ns)", "Speedup");
+    System.out.println("-------------------------------------------------------------");
+
+    for (int size : sizes) {
+        // Generate test data: sorted array of integers
+        Integer[] data = new Integer[size];
+        for (int i = 0; i < size; i++) {
+            data[i] = i;
+        }
+
+        // Target is guaranteed to be in the array for 'found' case
+        int searchTarget = size / 2;
+
+        // Linear search timing
+        long start = System.nanoTime();
+        SearchAlgorithms.linearSearch(data, searchTarget);
+        long linearTime = System.nanoTime() - start;
+
+        // Binary search timing
+        start = System.nanoTime();
+        SearchAlgorithms.binarySearch(data, searchTarget);
+        long binaryTime = System.nanoTime() - start;
+
+        double speedup = (double) linearTime / binaryTime;
+
+        System.out.printf("%-10d | %-15d | %-15d | %-15.2fx%n",
+            size, linearTime, binaryTime, speedup);
+    }
+
+    // // Counterexample: binary search on unsorted array
+    // System.out.println("\n    Counterexample: Binary Search on Unsorted Array");
+    // Integer[] unsorted = {5, 3, 8, 1, 9, 2, 7, 4, 6, 0};
+    // System.out.print("Unsorted array: ");
+    // for (int val : unsorted) System.out.print(val + " ");
+    // System.out.println();
+
+    // int index = SearchAlgorithms.binarySearch(unsorted, 5);
+    // System.out.println("Searching for 5 on unsorted array → returns index: " + index + " (incorrect!)");
+    System.out.println("   (Binary search PRECONDITION: array MUST be sorted!)");
+    System.out.println("   (Linear search would work on unsorted arrays.)");
+}
+
+private long timeSort(Integer[] array, String algorithm) {
+    long start = System.nanoTime();
+
+    switch (algorithm) {
+        case "selection":
+            SortAlgorithms.selectionSort(array);
+            break;
+        case "insertion":
+            SortAlgorithms.insertionSort(array);
+            break;
+        case "merge":
+            SortAlgorithms.mergeSort(array);
+            break;
+        case "quick":
+            SortAlgorithms.quickSort(array);
+            break;
+        default:
+            return -1;
+    }
+
+    return System.nanoTime() - start;
+}
+
+private void runSortExperiment() {
+    System.out.println("\n    Sorting Algorithm Performance");
+    System.out.println("------------------------------------");
+
+    int[] sizes = {100, 500, 1000, 5000, 10000};
+
+    System.out.printf("%-10s | %-12s | %-12s | %-12s | %-12s%n",
+        "Size", "Selection", "Insertion", "Merge", "Quick");
+    System.out.println("-------------------------------------------------------------");
+
+    for (int size : sizes) {
+        // Generate test data: random integers
+        Integer[] original = new Integer[size];
+        for (int i = 0; i < size; i++) {
+            original[i] = (int) (Math.random() * 100000);
+        }
+
+        // Test each sorting algorithm on a copy of the data
+        long selectionTime = timeSort(original.clone(), "selection");
+        long insertionTime = timeSort(original.clone(), "insertion");
+        long mergeTime = timeSort(original.clone(), "merge");
+        long quickTime = timeSort(original.clone(), "quick");
+
+        System.out.printf("%-10d | %-12d | %-12d | %-12d | %-12d%n",
+            size, selectionTime, insertionTime, mergeTime, quickTime);
+    }
+
+    System.out.println("\n    Notes:");
+    System.out.println("  - Selection Sort: O(n²), in-place, NOT stable");
+    System.out.println("  - Insertion Sort: O(n²), in-place, STABLE");
+    System.out.println("  - Merge Sort: O(n log n), NOT in-place, STABLE");
+    System.out.println("  - Quick Sort: O(n log n) avg, in-place, NOT stable");
+    System.out.println("  - Times are in nanoseconds (smaller is faster)");
+}
+
+private void runPerformanceExperiments() {
+    System.out.println("\n    Run Performance Experiments");
+    System.out.println("------------------------------------");
+
+    System.out.println("Choose experiment:");
+    System.out.println("1. Search Algorithms (Linear vs Binary)");
+    System.out.println("2. Sort Algorithms (Selection, Insertion, Merge, Quick)");
+    System.out.print("Enter choice (1 or 2): ");
+    int choice = scanner.nextInt();
+    scanner.nextLine();
+
+    switch (choice) {
+        case 1:
+            runSearchExperiment();
+            break;
+        case 2:
+            runSortExperiment();
+            break;
+        default:
+            System.out.println("    Invalid choice.");
     }
 }
 
