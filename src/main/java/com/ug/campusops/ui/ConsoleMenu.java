@@ -2,6 +2,8 @@ package com.ug.campusops.ui;
 
 import java.util.Scanner;
 import com.ug.campusops.model.ServiceRequest;
+import com.ug.campusops.db.DatabaseConnector;
+import com.ug.campusops.service.RequestDispatcher;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,15 +44,19 @@ public class ConsoleMenu {
     private List<ServiceRequest> pendingRequests;
     private List<Location> locations;
     private Graph campusGraph;
+    private DatabaseConnector db;
+    private RequestDispatcher requestDispatcher;
 
     /** Creates the console menu. */
-    public ConsoleMenu(Graph campusGraph) {
-    this.scanner = new Scanner(System.in);
-    this.pendingRequests = new ArrayList<>();
-    this.locations = new ArrayList<>();
-    this.campusGraph = campusGraph;
-    loadLocations();
-}
+    public ConsoleMenu(Graph campusGraph, DatabaseConnector db) {
+        this.scanner = new Scanner(System.in);
+        this.pendingRequests = new ArrayList<>();
+        this.locations = new ArrayList<>();
+        this.campusGraph = campusGraph;
+        this.db = db;
+        this.requestDispatcher = new RequestDispatcher(db, campusGraph);
+        loadLocations();
+    }
 
     /**
      * Displays the main menu and processes user choices in a loop.
@@ -375,6 +381,15 @@ private void viewMinimumSpanningTree() {
 
         pendingRequests.add(request);
 
+        // Persist the request to the database via RequestDispatcher
+        try {
+            if (requestDispatcher != null) {
+                requestDispatcher.submitRequest(request);
+                System.out.println("   (Saved to database)");
+            }
+        } catch (Exception e) {
+            System.out.println("   (Warning: could not save to database: " + e.getMessage() + ")");
+        }
         // 5. Show confirmation
         System.out.println("\n   Request #" + request.getRequestId() + " submitted successfully!");
         System.out.println("   Location ID: " + locationId);
@@ -524,34 +539,20 @@ private void viewQueueStatus() {
 private void processNextRequest() {
     System.out.println("\n Process Next Request (Dispatch)");
     System.out.println("------------------------------------");
-    
-    if (pendingRequests.isEmpty()) {
-        System.out.println("No pending requests to process.");
-        return;
-    }
-    
-    // Find the most urgent request (highest urgency level)
-    ServiceRequest mostUrgent = pendingRequests.get(0);
-    int mostUrgentIndex = 0;
-    
-    for (int i = 1; i < pendingRequests.size(); i++) {
-        ServiceRequest current = pendingRequests.get(i);
-        if (current.getUrgencyLevel() > mostUrgent.getUrgencyLevel()) {
-            mostUrgent = current;
-            mostUrgentIndex = i;
+    // Use RequestDispatcher + SchedulingEngine to process next request
+    try {
+        int assigned = -1;
+        if (requestDispatcher != null) {
+            assigned = requestDispatcher.processNextRequest();
         }
+        if (assigned > 0) {
+            System.out.println("   Request assigned to resource ID: " + assigned);
+        } else if (assigned == -1) {
+            System.out.println("   No request processed or no available resource.");
+        }
+    } catch (Exception e) {
+        System.out.println("   Error while processing next request: " + e.getMessage());
     }
-    
-    // Remove it from the list
-    pendingRequests.remove(mostUrgentIndex);
-    
-    // Display what was processed
-    System.out.println("   Processing Request #" + mostUrgent.getRequestId());
-    System.out.println("   Location ID: " + mostUrgent.getSourceLocationId());
-    System.out.println("   Category: " + mostUrgent.getCategory());
-    System.out.println("   Urgency: " + mostUrgent.getUrgencyLevel() + "/5");
-    System.out.println("   Status: in-progress (dispatched)");
-    System.out.println("\n  Remaining pending requests: " + pendingRequests.size());
 }
 
 private void loadLocations() {

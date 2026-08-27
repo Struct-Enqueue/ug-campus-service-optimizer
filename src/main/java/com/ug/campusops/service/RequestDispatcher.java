@@ -64,12 +64,62 @@ public class RequestDispatcher {
         String destination = request.getDestinationLocationId() <= 0
                 ? "NULL"
                 : Integer.toString(request.getDestinationLocationId());
-        update("INSERT INTO service_requests (source_location_id, destination_location_id, category, "
+        // Use RETURNING to get the generated request_id from Postgres
+        String insert = "INSERT INTO service_requests (source_location_id, destination_location_id, category, "
                 + "urgency_level, time_submitted, deadline, status, assigned_resource_id) VALUES ("
                 + request.getSourceLocationId() + ", " + destination + ", '"
                 + sql(request.getCategory()) + "', " + request.getUrgencyLevel() + ", " + submitted
-                + ", " + deadline + ", 'pending', NULL)");
+                + ", " + deadline + ", 'pending', NULL) RETURNING request_id";
+        try {
+            java.sql.ResultSet rs = dbConnector.executeQuery(insert);
+            if (rs.next()) {
+                int generatedId = rs.getInt(1);
+                request.setRequestId(generatedId);
+            }
+            rs.close();
+        } catch (java.sql.SQLException e) {
+            String msg = e.getMessage() == null ? "" : e.getMessage();
+            // Attempt to recover from sequence mismatch (duplicate key)
+            if (msg.contains("duplicate key value") || msg.contains("violates unique constraint")) {
+                System.err.println("[DB-ERROR] Detected duplicate key on insert; attempting to fix sequence...");
+                try {
+                    String fixSeq = "SELECT setval(pg_get_serial_sequence('service_requests','request_id'), (SELECT COALESCE(MAX(request_id),0) FROM service_requests)+1)";
+                    dbConnector.executeQuery(fixSeq).close();
+                    // Retry the insert once
+                    java.sql.ResultSet rs = dbConnector.executeQuery(insert);
+                    if (rs.next()) {
+                        int generatedId = rs.getInt(1);
+                        request.setRequestId(generatedId);
+                    }
+                    rs.close();
+                } catch (java.sql.SQLException ex) {
+                    System.err.println("[DB-ERROR] Sequence fix or retry failed. SQL: " + insert);
+                    ex.printStackTrace();
+                    throw new IllegalStateException("Could not insert service request after sequence fix", ex);
+                }
+            } else {
+                System.err.println("[DB-ERROR] Failed INSERT SQL: " + insert);
+                e.printStackTrace();
+                throw new IllegalStateException("Could not insert service request", e);
+            }
+        }
         schedulingEngine.addToQueue(request);
+    }
+
+    /**
+     * Processes the next request from the scheduling engine: assigns a resource
+     * and updates the database. Returns assigned resource id or -1 if none.
+     */
+    public int processNextRequest() {
+        ServiceRequest next = schedulingEngine.scheduleNext();
+        if (next == null)
+            return -1;
+        // Ensure the request exists in DB (submitRequest should have set request_id)
+        if (next.getRequestId() <= 0) {
+            // Try to locate the request by matching source/time/category — fallback
+            return -1;
+        }
+        return assignResource(next.getRequestId());
     }
 
     /**

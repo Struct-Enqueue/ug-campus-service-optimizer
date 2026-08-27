@@ -83,7 +83,7 @@ public class Main {
             Graph campusGraph = GraphDataLoader.loadCampusGraph(db);
             System.out.println("[INFO] Graph loaded with " + campusGraph.getVertexCount() + " vertices and " + campusGraph.getEdgeCount() + " edges.");
 
-            ConsoleMenu menu = new ConsoleMenu(campusGraph);
+            ConsoleMenu menu = new ConsoleMenu(campusGraph, db);
             menu.start();
 
         } catch (java.sql.SQLException e) {
