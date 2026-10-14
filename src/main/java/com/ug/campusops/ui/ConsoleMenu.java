@@ -2,24 +2,12 @@ package com.ug.campusops.ui;
 
 import java.util.Scanner;
 import com.ug.campusops.model.ServiceRequest;
-import com.ug.campusops.db.DatabaseConnector;
-import com.ug.campusops.service.RequestDispatcher;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.ug.campusops.graph.Graph;
 import com.ug.campusops.model.Location;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Collections;
-import com.ug.campusops.graph.Dijkstra;
-import com.ug.campusops.graph.BFS;
-import com.ug.campusops.graph.DFS;
-import com.ug.campusops.graph.Prim;
-import com.ug.campusops.graph.Kruskal;
-import com.ug.campusops.algorithms.Greedy;
-import com.ug.campusops.algorithms.DynamicProgramming;
-import com.ug.campusops.model.Resource;
-import com.ug.campusops.algorithms.SearchAlgorithms;
-import com.ug.campusops.algorithms.SortAlgorithms;
 
 /**
  * Console-based menu system for the Campus Smart Service Operations Optimizer.
@@ -46,185 +34,17 @@ public class ConsoleMenu {
     private Scanner scanner;
     private List<ServiceRequest> pendingRequests;
     private List<Location> locations;
-    private Graph campusGraph;
-    private DatabaseConnector db;
-    private RequestDispatcher requestDispatcher;
+    private Map<Integer, List<RouteEdge>> adjacencyList;
+    private Map<Integer, String> locationNames;
 
     /** Creates the console menu. */
-    public ConsoleMenu(Graph campusGraph, DatabaseConnector db) {
-        this.scanner = new Scanner(System.in);
-        this.pendingRequests = new ArrayList<>();
-        this.locations = new ArrayList<>();
-        this.campusGraph = campusGraph;
-        this.db = db;
-        this.requestDispatcher = new RequestDispatcher(db, campusGraph);
-        loadLocations();
-    }
-
-    
-
-    private boolean locationExists(int id) {
-    for (Location loc : locations) {
-        if (loc.getLocationId() == id) {
-            return true;
-        }
-    }
-    return false;
+    public ConsoleMenu() {
+    this.scanner = new Scanner(System.in);
+    this.pendingRequests = new ArrayList<>();
+    this.locations = new ArrayList<>();
+    loadLocations();
+    loadRoutes();
 }
-
-private String getLocationName(int id) {
-    for (Location loc : locations) {
-        if (loc.getLocationId() == id) {
-            return loc.getName();
-        }
-    }
-    return null;
-}
-
-    private void findFastestRoute() {
-    System.out.println("\n Find Fastest Route Between Locations");
-    System.out.println("------------------------------------");
-
-    if (campusGraph == null || campusGraph.getVertexCount() == 0) {
-        System.out.println(" Graph not loaded. Please check database connection.");
-        return;
-    }
-
-    System.out.print("Enter start location ID: ");
-    int startId = scanner.nextInt();
-    scanner.nextLine();
-
-    System.out.print("Enter destination location ID: ");
-    int destId = scanner.nextInt();
-    scanner.nextLine();
-
-    // Check if locations exist in our loaded locations list
-    if (!locationExists(startId)) {
-        System.out.println(" Invalid start location ID.");
-        return;
-    }
-    if (!locationExists(destId)) {
-        System.out.println(" Invalid destination location ID.");
-        return;
-    }
-
-    Dijkstra.ShortestPathResult result = Dijkstra.shortestPath(campusGraph, startId, destId);
-
-    // Check if a path was found
-    if (result.distances[destId] == Double.POSITIVE_INFINITY) {
-        System.out.println(" No route found between " + startId + " and " + destId);
-        return;
-    }
-
-    // Reconstruct the path from predecessors
-    List<Integer> path = new ArrayList<>();
-    int current = destId;
-    while (current != startId) {
-        path.add(current);
-        current = result.predecessors[current];
-        if (current == -1) {
-            break;
-        }
-    }
-    path.add(startId);
-    Collections.reverse(path);
-
-    // Display the results
-    System.out.println("\n Shortest route found!");
-    System.out.printf("   Total distance: %.0f meters%n", result.distances[destId]);
-
-    System.out.println("   Path: ");
-    for (int i = 0; i < path.size(); i++) {
-        int id = path.get(i);
-        String name = getLocationName(id);
-        System.out.print("   " + (i + 1) + ". " + (name != null ? name : "Unknown (" + id + ")"));
-        if (i < path.size() - 1) {
-            System.out.println(" →");
-        }
-    }
-    System.out.println();
-}
-
-private void checkReachableLocations() {
-    System.out.println("\n    Check Reachable Locations (BFS/DFS)");
-    System.out.println("------------------------------------");
-
-    if (campusGraph == null || campusGraph.getVertexCount() == 0) {
-        System.out.println("    Graph not loaded. Please check database connection.");
-        return;
-    }
-
-    System.out.print("Enter start location ID: ");
-    int startId = scanner.nextInt();
-    scanner.nextLine();
-
-    if (!locationExists(startId)) {
-        System.out.println("    Invalid location ID.");
-        return;
-    }
-
-    System.out.println("Choose algorithm:");
-    System.out.println("1. BFS (Breadth-First Search)");
-    System.out.println("2. DFS (Depth-First Search)");
-    System.out.print("Enter choice (1 or 2): ");
-    int choice = scanner.nextInt();
-    scanner.nextLine();
-
-    int[] result;
-    String algorithmName;
-    if (choice == 1) {
-        result = BFS.traverse(campusGraph, startId);
-        algorithmName = "BFS";
-    } else if (choice == 2) {
-        result = DFS.traverse(campusGraph, startId);
-        algorithmName = "DFS";
-    } else {
-        System.out.println(" Invalid choice.");
-        return;
-    }
-
-    System.out.println("\n    " + algorithmName + " traversal from location " + startId + ":");
-    System.out.println("Found " + result.length + " reachable location(s):");
-    System.out.println("ID | Name");
-    System.out.println("----------------");
-    for (int id : result) {
-        String name = getLocationName(id);
-        System.out.printf("%-2d | %s%n", id, name != null ? name : "Unknown");
-    }
-}
-
-private void viewMinimumSpanningTree() {
-    System.out.println("\n    Minimum Spanning Tree (MST)");
-    System.out.println("------------------------------------");
-
-    if (campusGraph == null || campusGraph.getVertexCount() == 0) {
-        System.out.println("    Graph not loaded. Please check database connection.");
-        return;
-    }
-
-    System.out.println("Choose algorithm:");
-    System.out.println("1. Prim's Algorithm");
-    System.out.println("2. Kruskal's Algorithm");
-    System.out.print("Enter choice (1 or 2): ");
-    int choice = scanner.nextInt();
-    scanner.nextLine();
-
-    Prim.MSTResult result;
-    String algorithmName;
-    if (choice == 1) {
-        result = Prim.minimumSpanningTree(campusGraph);
-        algorithmName = "Prim";
-    } else if (choice == 2) {
-        result = Kruskal.minimumSpanningTree(campusGraph);
-        algorithmName = "Kruskal";
-    } else {
-        System.out.println("    Invalid choice.");
-        return;
-    }
-
-    System.out.println("\n🌲 MST using " + algorithmName + "'s algorithm:");
-    System.out.println("   Total edges: " + result.edgeCount);
-    System.out.printf("   Total cost: %.2f%n", result.totalCost);
 
     System.out.println("\n   Edges in the MST:");
     System.out.println("   From | To   | Weight");
@@ -245,6 +65,108 @@ private void viewMinimumSpanningTree() {
      * Displays the main menu and processes user choices in a loop.
      * This is the entry point — called from Main.java.
      */
+
+    private static class RouteEdge {
+    int toId;
+    int distance;
+    double trafficFactor;
+
+    RouteEdge(int toId, int distance, double trafficFactor) {
+        this.toId = toId;
+        this.distance = distance;
+        this.trafficFactor = trafficFactor;
+    }
+
+    double getWeight() {
+        return distance * trafficFactor;
+    }
+}
+    private void findFastestRoute() {
+    System.out.println("\n Find Fastest Route Between Locations");
+    System.out.println("------------------------------------");
+    
+    if (adjacencyList == null || adjacencyList.isEmpty()) {
+        System.out.println(" Route data not loaded. Please ensure routes.csv exists.");
+        return;
+    }
+    
+    System.out.print("Enter start location ID: ");
+    int startId = scanner.nextInt();
+    scanner.nextLine();
+    
+    System.out.print("Enter destination location ID: ");
+    int destId = scanner.nextInt();
+    scanner.nextLine();
+    
+    if (!locationNames.containsKey(startId)) {
+        System.out.println(" Invalid start location ID.");
+        return;
+    }
+    if (!locationNames.containsKey(destId)) {
+        System.out.println(" Invalid destination location ID.");
+        return;
+    }
+    
+    // Run Dijkstra
+    Map<Integer, Double> distances = new HashMap<>();
+    Map<Integer, Integer> predecessors = new HashMap<>();
+    java.util.PriorityQueue<int[]> pq = new java.util.PriorityQueue<>((a, b) -> Double.compare(a[1], b[1]));
+    
+    for (int id : locationNames.keySet()) {
+        distances.put(id, Double.MAX_VALUE);
+    }
+    distances.put(startId, 0.0);
+    pq.offer(new int[]{startId, 0});
+    
+    while (!pq.isEmpty()) {
+        int[] current = pq.poll();
+        int currentId = current[0];
+        double currentDist = current[1];
+        
+        if (currentDist > distances.get(currentId)) continue;
+        if (currentId == destId) break;
+        
+        List<RouteEdge> edges = adjacencyList.get(currentId);
+        if (edges == null) continue;
+        
+        for (RouteEdge edge : edges) {
+            double newDist = currentDist + edge.getWeight();
+            if (newDist < distances.get(edge.toId)) {
+                distances.put(edge.toId, newDist);
+                predecessors.put(edge.toId, currentId);
+                pq.offer(new int[]{edge.toId, (int) newDist});
+            }
+        }
+    }
+    
+    // Display result
+    if (distances.get(destId) == Double.MAX_VALUE) {
+        System.out.println(" No route found between " + startId + " and " + destId);
+        return;
+    }
+    
+    // Reconstruct path
+    List<Integer> path = new ArrayList<>();
+    int current = destId;
+    while (current != startId) {
+        path.add(current);
+        current = predecessors.getOrDefault(current, -1);
+        if (current == -1) break;
+    }
+    path.add(startId);
+    Collections.reverse(path);
+    
+    System.out.println("\n Shortest route found!");
+    System.out.println("   Total distance: " + Math.round(distances.get(destId)) + " meters");
+    System.out.println("   Path: ");
+    for (int i = 0; i < path.size(); i++) {
+        int id = path.get(i);
+        System.out.print("   " + (i+1) + ". " + locationNames.get(id));
+        if (i < path.size() - 1) System.out.println(" →");
+    }
+    System.out.println();
+}
+
     public void start() {
         int choice;
 
@@ -277,11 +199,13 @@ private void viewMinimumSpanningTree() {
                     break;
 
                 case 5:
-                    checkReachableLocations();
+                    System.out.println("[Option 5] Check reachable locations (BFS/DFS) - Coming soon!");
+                    // TODO: Later, call BFS.traverse() or DFS.traverse()
                     break;
 
                 case 6:
-                    viewMinimumSpanningTree();
+                    System.out.println("[Option 6] View minimum spanning tree (Prim/Kruskal) - Coming soon!");
+                    // TODO: Later, call Prim.minimumSpanningTree() or Kruskal...
                     break;
 
                 case 7:
@@ -293,11 +217,13 @@ private void viewMinimumSpanningTree() {
                     break;
 
                 case 9:
-                    runOptimisation();
+                    System.out.println("[Option 9] Run optimisation (Greedy / DP) - Coming soon!");
+                    // TODO: Later, call Greedy.nearestResourceAssignment() or DP...
                     break;
 
                 case 10:
-                   runPerformanceExperiments();
+                    System.out.println("[Option 10] Run performance experiments - Coming soon!");
+                    // TODO: Later, run the timing tests
                     break;
 
                 case 11:
@@ -377,15 +303,6 @@ private void viewMinimumSpanningTree() {
 
         pendingRequests.add(request);
 
-        // Persist the request to the database via RequestDispatcher
-        try {
-            if (requestDispatcher != null) {
-                requestDispatcher.submitRequest(request);
-                System.out.println("   (Saved to database)");
-            }
-        } catch (Exception e) {
-            System.out.println("   (Warning: could not save to database: " + e.getMessage() + ")");
-        }
         // 5. Show confirmation
         System.out.println("\n   Request #" + request.getRequestId() + " submitted successfully!");
         System.out.println("   Location ID: " + locationId);
@@ -535,20 +452,34 @@ private void viewQueueStatus() {
 private void processNextRequest() {
     System.out.println("\n Process Next Request (Dispatch)");
     System.out.println("------------------------------------");
-    // Use RequestDispatcher + SchedulingEngine to process next request
-    try {
-        int assigned = -1;
-        if (requestDispatcher != null) {
-            assigned = requestDispatcher.processNextRequest();
-        }
-        if (assigned > 0) {
-            System.out.println("   Request assigned to resource ID: " + assigned);
-        } else if (assigned == -1) {
-            System.out.println("   No request processed or no available resource.");
-        }
-    } catch (Exception e) {
-        System.out.println("   Error while processing next request: " + e.getMessage());
+    
+    if (pendingRequests.isEmpty()) {
+        System.out.println("No pending requests to process.");
+        return;
     }
+    
+    // Find the most urgent request (highest urgency level)
+    ServiceRequest mostUrgent = pendingRequests.get(0);
+    int mostUrgentIndex = 0;
+    
+    for (int i = 1; i < pendingRequests.size(); i++) {
+        ServiceRequest current = pendingRequests.get(i);
+        if (current.getUrgencyLevel() > mostUrgent.getUrgencyLevel()) {
+            mostUrgent = current;
+            mostUrgentIndex = i;
+        }
+    }
+    
+    // Remove it from the list
+    pendingRequests.remove(mostUrgentIndex);
+    
+    // Display what was processed
+    System.out.println("   Processing Request #" + mostUrgent.getRequestId());
+    System.out.println("   Location ID: " + mostUrgent.getSourceLocationId());
+    System.out.println("   Category: " + mostUrgent.getCategory());
+    System.out.println("   Urgency: " + mostUrgent.getUrgencyLevel() + "/5");
+    System.out.println("   Status: in-progress (dispatched)");
+    System.out.println("\n  Remaining pending requests: " + pendingRequests.size());
 }
 
 private void loadLocations() {
@@ -575,260 +506,39 @@ private void loadLocations() {
     }
 }
 
-private Resource[] loadResources() {
-    List<Resource> resourceList = new ArrayList<>();
-    try {
-        java.sql.ResultSet rs = db.executeQuery(
-            "SELECT resource_id, type, home_location_id, capacity, availability_status FROM resources"
-        );
-        while (rs.next()) {
-            Resource res = new Resource(
-                rs.getInt("resource_id"),
-                rs.getString("type"),
-                rs.getInt("home_location_id"),
-                rs.getInt("capacity"),
-                rs.getString("availability_status")
-            );
-            resourceList.add(res);
+private void loadRoutes() {
+    adjacencyList = new HashMap<>();
+    locationNames = new HashMap<>();
+    String filePath = "data/routes.csv";
+    
+    try (java.io.BufferedReader br = new java.io.BufferedReader(new java.io.FileReader(filePath))) {
+        String line = br.readLine(); // skip header
+        while ((line = br.readLine()) != null) {
+            String[] parts = line.split(",");
+            if (parts.length >= 6) {
+                int fromId = Integer.parseInt(parts[1]);
+                int toId = Integer.parseInt(parts[2]);
+                int distance = Integer.parseInt(parts[3]);
+                int avgTime = Integer.parseInt(parts[4]);
+                double trafficFactor = Double.parseDouble(parts[5]);
+                
+                // Add edge from -> to
+                adjacencyList.putIfAbsent(fromId, new ArrayList<>());
+                adjacencyList.get(fromId).add(new RouteEdge(toId, distance, trafficFactor));
+                
+                // Add reverse edge (bidirectional)
+                adjacencyList.putIfAbsent(toId, new ArrayList<>());
+                adjacencyList.get(toId).add(new RouteEdge(fromId, distance, trafficFactor));
+            }
         }
-        rs.close();
-        System.out.println("[INFO] Loaded " + resourceList.size() + " resources from DB.");
+        System.out.println("[INFO] Loaded routes from CSV.");
     } catch (Exception e) {
-        System.out.println("[WARNING] Could not load resources: " + e.getMessage());
+        System.out.println("[WARNING] Could not load routes: " + e.getMessage());
     }
-    return resourceList.toArray(new Resource[0]);
-}
-
-private void runGreedy() {
-    System.out.println("\n    Greedy Algorithm: Nearest-Resource Assignment");
-    System.out.println("------------------------------------");
-
-    // Load resources from DB
-    Resource[] resources = loadResources();
-    if (resources.length == 0) {
-        System.out.println("    No resources available in the database.");
-        return;
-    }
-
-    // Convert pendingRequests list to array
-    ServiceRequest[] requestsArray = pendingRequests.toArray(new ServiceRequest[0]);
-
-    // Run greedy assignment
-    int[] assignments = Greedy.nearestResourceAssignment(requestsArray, resources, campusGraph);
-
-    // Display results
-    System.out.println("\n    Assignment Results:");
-    System.out.println("Request ID | Assigned Resource ID | Status");
-    System.out.println("------------------------------------------");
-    for (int i = 0; i < assignments.length; i++) {
-        System.out.printf("%-10d | %-20d | %s%n",
-            requestsArray[i].getRequestId(),
-            assignments[i],
-            assignments[i] != -1 ? "    Assigned" : "    No resource");
-    }
-
-    // Show greedy counterexample for demonstration
-    System.out.println("\n    Greedy Counterexample (from documentation):");
-    System.out.println(Greedy.greedyCounterExample());
-}
-
-private void runDP() {
-    System.out.println("\n   Dynamic Programming: 0/1 Knapsack");
-    System.out.println("------------------------------------");
-
-    if (pendingRequests.isEmpty()) {
-        System.out.println("    No pending requests to optimise.");
-        return;
-    }
-
-    // Ask for budget (total time available in minutes)
-    System.out.print("Enter total available time budget (in minutes): ");
-    int budget = scanner.nextInt();
-    scanner.nextLine();
-
-    // Convert pendingRequests list to array
-    ServiceRequest[] requestsArray = pendingRequests.toArray(new ServiceRequest[0]);
-
-    // Run DP
-    DynamicProgramming.KnapsackResult result = DynamicProgramming.requestKnapsack(requestsArray, budget);
-
-    // Display DP table (optional, but good for evidence)
-    System.out.println("\n    DP Tabulation Table (rows = items, columns = budget):");
-    System.out.println(result.dpTableAsString());
-
-    // Display results
-    System.out.println("    Maximum total urgency achieved: " + result.maxValue);
-    System.out.println("    Selected requests (indices): " + result.selectedIndicesAsString());
-
-    // Show which requests were selected (with details)
-    System.out.println("\n    Selected Requests Details:");
-    System.out.println("Index | ID | Category   | Urgency | Estimated Time");
-    System.out.println("------------------------------------------------");
-    for (int i = 0; i < requestsArray.length; i++) {
-        if (result.selectedItems[i]) {
-            ServiceRequest req = requestsArray[i];
-            System.out.printf("%-5d | %-2d | %-10s | %-7d | %d min%n",
-                i, req.getRequestId(), req.getCategory(),
-                req.getUrgencyLevel(), req.getEstimatedTime());
-        }
-    }
-}
-
-private void runOptimisation() {
-    System.out.println("\n    Run Optimisation (Greedy / DP)");
-    System.out.println("------------------------------------");
-
-    if (pendingRequests.isEmpty()) {
-        System.out.println("    No pending requests to optimise. Please submit some requests first.");
-        return;
-    }
-
-    System.out.println("Choose algorithm:");
-    System.out.println("1. Greedy (Nearest-Resource Assignment)");
-    System.out.println("2. Dynamic Programming (0/1 Knapsack)");
-    System.out.print("Enter choice (1 or 2): ");
-    int choice = scanner.nextInt();
-    scanner.nextLine();
-
-    switch (choice) {
-        case 1:
-            runGreedy();
-            break;
-        case 2:
-            runDP();
-            break;
-        default:
-            System.out.println("    Invalid choice.");
-    }
-}
-
-private void runSearchExperiment() {
-    System.out.println("\n    Search Algorithm Performance");
-    System.out.println("------------------------------------");
-
-    int[] sizes = {100, 500, 1000, 5000, 10000};
-    int target = 9999; // target value to search for
-
-    System.out.printf("%-10s | %-15s | %-15s | %-15s%n", "Size", "Linear (ns)", "Binary (ns)", "Speedup");
-    System.out.println("-------------------------------------------------------------");
-
-    for (int size : sizes) {
-        // Generate test data: sorted array of integers
-        Integer[] data = new Integer[size];
-        for (int i = 0; i < size; i++) {
-            data[i] = i;
-        }
-
-        // Target is guaranteed to be in the array for 'found' case
-        int searchTarget = size / 2;
-
-        // Linear search timing
-        long start = System.nanoTime();
-        SearchAlgorithms.linearSearch(data, searchTarget);
-        long linearTime = System.nanoTime() - start;
-
-        // Binary search timing
-        start = System.nanoTime();
-        SearchAlgorithms.binarySearch(data, searchTarget);
-        long binaryTime = System.nanoTime() - start;
-
-        double speedup = (double) linearTime / binaryTime;
-
-        System.out.printf("%-10d | %-15d | %-15d | %-15.2fx%n",
-            size, linearTime, binaryTime, speedup);
-    }
-
-    // // Counterexample: binary search on unsorted array
-    // System.out.println("\n    Counterexample: Binary Search on Unsorted Array");
-    // Integer[] unsorted = {5, 3, 8, 1, 9, 2, 7, 4, 6, 0};
-    // System.out.print("Unsorted array: ");
-    // for (int val : unsorted) System.out.print(val + " ");
-    // System.out.println();
-
-    // int index = SearchAlgorithms.binarySearch(unsorted, 5);
-    // System.out.println("Searching for 5 on unsorted array → returns index: " + index + " (incorrect!)");
-    System.out.println("   (Binary search PRECONDITION: array MUST be sorted!)");
-    System.out.println("   (Linear search would work on unsorted arrays.)");
-}
-
-private long timeSort(Integer[] array, String algorithm) {
-    long start = System.nanoTime();
-
-    switch (algorithm) {
-        case "selection":
-            SortAlgorithms.selectionSort(array);
-            break;
-        case "insertion":
-            SortAlgorithms.insertionSort(array);
-            break;
-        case "merge":
-            SortAlgorithms.mergeSort(array);
-            break;
-        case "quick":
-            SortAlgorithms.quickSort(array);
-            break;
-        default:
-            return -1;
-    }
-
-    return System.nanoTime() - start;
-}
-
-private void runSortExperiment() {
-    System.out.println("\n    Sorting Algorithm Performance");
-    System.out.println("------------------------------------");
-
-    int[] sizes = {100, 500, 1000, 5000, 10000};
-
-    System.out.printf("%-10s | %-12s | %-12s | %-12s | %-12s%n",
-        "Size", "Selection", "Insertion", "Merge", "Quick");
-    System.out.println("-------------------------------------------------------------");
-
-    for (int size : sizes) {
-        // Generate test data: random integers
-        Integer[] original = new Integer[size];
-        for (int i = 0; i < size; i++) {
-            original[i] = (int) (Math.random() * 100000);
-        }
-
-        // Test each sorting algorithm on a copy of the data
-        long selectionTime = timeSort(original.clone(), "selection");
-        long insertionTime = timeSort(original.clone(), "insertion");
-        long mergeTime = timeSort(original.clone(), "merge");
-        long quickTime = timeSort(original.clone(), "quick");
-
-        System.out.printf("%-10d | %-12d | %-12d | %-12d | %-12d%n",
-            size, selectionTime, insertionTime, mergeTime, quickTime);
-    }
-
-    System.out.println("\n    Notes:");
-    System.out.println("  - Selection Sort: O(n²), in-place, NOT stable");
-    System.out.println("  - Insertion Sort: O(n²), in-place, STABLE");
-    System.out.println("  - Merge Sort: O(n log n), NOT in-place, STABLE");
-    System.out.println("  - Quick Sort: O(n log n) avg, in-place, NOT stable");
-    System.out.println("  - Times are in nanoseconds (smaller is faster)");
-}
-
-private void runPerformanceExperiments() {
-    System.out.println("\n    Run Performance Experiments");
-    System.out.println("------------------------------------");
-
-    System.out.println("Choose experiment:");
-    System.out.println("1. Search Algorithms (Linear vs Binary)");
-    System.out.println("2. Sort Algorithms (Selection, Insertion, Merge, Quick)");
-    System.out.print("Enter choice (1 or 2): ");
-    int choice = scanner.nextInt();
-    scanner.nextLine();
-
-    switch (choice) {
-        case 1:
-            runSearchExperiment();
-            break;
-        case 2:
-            runSortExperiment();
-            break;
-        default:
-            System.out.println("    Invalid choice.");
+    
+    // Build location name map from the locations list
+    for (Location loc : locations) {
+        locationNames.put(loc.getLocationId(), loc.getName());
     }
 }
 

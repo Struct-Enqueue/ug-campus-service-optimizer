@@ -98,7 +98,6 @@ public class Main {
         // Graph campusGraph = new Graph(60);
         // // load locations and routes from DB, add to graph
         
-        
         // //Step 4: Build priority queue from pending requests
         // // load pending requests from DB, add to priority queue
         //
