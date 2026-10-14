@@ -189,3 +189,13 @@ F1 (Data Loader) → F2, F3, F4 (parallel) → F5, F6, F7 (parallel) → F8 → 
 | Routes | 110 | `data/routes.csv` |
 | Resources | 35 | `data/resources.csv` |
 | Requests | 310 | `data/requests.csv` |
+
+
+---
+
+## Project Documentation
+
+- [Final Project Report - Word](docs/DSA_Project_Documentation.docx)
+- [Final Project Report - PDF](docs/DSA_Project_Documentation.pdf)
+- [Development Log](docs/Development_Log.xlsx)
+- [Individual Contribution Log](docs/Individual_Contribution_Log.xlsx)
